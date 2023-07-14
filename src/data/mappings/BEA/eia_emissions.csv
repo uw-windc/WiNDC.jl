@@ -1,0 +1,9 @@
+eia_sector,windc_label
+coal,col
+natural_gas,gas
+petroleum,oil
+industrial,ind
+commercial,com
+residential,res
+electricity,ele
+transport,trn
