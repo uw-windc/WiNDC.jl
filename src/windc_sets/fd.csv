@@ -1,0 +1,19 @@
+fd,description
+fed_structures,Federal nondefense: Gross investment in structures
+def_equipment,Federal national defense: Gross investment in equipment
+changinv,Change in private inventories
+def_structures,Federal national defense: Gross investment in structures
+state_equipment,State and local: Gross investment in equipment
+def_intelprop,Federal national defense: Gross investment in intellectual
+nondefense,Nondefense: Consumption expenditures
+fed_equipment,Federal nondefense: Gross investment in equipment
+state_invest,State and local: Gross investment in structures
+structures,Nonresidential private fixed investment in structures
+defense,National defense: Consumption expenditures
+residential,Residential private fixed investment
+equipment,Nonresidential private fixed investment in equipment
+state_intelprop,State and local: Gross investment in intellectual
+intelprop,Nonresidential private fixed investment in intellectual
+pce,Personal consumption expenditures
+state_consume,State and local government consumption expenditures
+fed_intelprop,Federal nondefense: Gross investment in intellectual prop
