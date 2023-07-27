@@ -10,7 +10,11 @@ data.
 function load_bea_data(use_path::String,supply_path::String)
 
 
+    # Load sets
+    # TO DO: Don't hard code this.
     GU = load_universe("./windc_sets")
+
+    #Create empty parameters
 
     @create_parameters(GU,begin
         #Use
@@ -41,6 +45,8 @@ function load_bea_data(use_path::String,supply_path::String)
     bea_map = Dict(zip(codes,windc_label));
 
 
+    #Read use/supply tables.
+
     use = XLSX.readxlsx(use_path)
     supply = XLSX.readxlsx(supply_path)
 
@@ -49,7 +55,123 @@ function load_bea_data(use_path::String,supply_path::String)
         load_supply_year!(GU,supply,year,bea_map)
     end
 
+    # Define parameters
 
+    GU[:id0][:yr,:i,:j] = GU[:id0][:yr,:i,:j] .- permutedims(min.(0,GU[:ys0][:yr,:j,:i]),[1,3,2])
+    GU[:ys0][:yr,:j,:i] = GU[:ys0][:yr,:j,:i] - min.(0,permutedims(GU[:id0][:yr,:i,:j],[1,3,2]))
+
+    GU[:ys0][:yr,:j,:i] = max.(0,GU[:ys0][:yr,:j,:i])
+    GU[:id0][:yr,:i,:j] = max.(0,GU[:id0][:yr,:i,:j])
+
+
+    iₘ  = [e for e ∈GU[:i] if e!=:ins]
+
+    GU[:trn0][:yr,iₘ] = GU[:trn0][:yr,iₘ] .+ GU[:cif0][:yr,iₘ]
+    GU[:m0][:yr,[:ins]] = GU[:m0][:yr,[:ins]] .+ GU[:cif0][:yr,[:ins]]
+
+    # Second phase
+
+    # More parameters
+
+    @create_parameters(GU,begin
+    :s0, (:yr,:j), "Aggregate Supply"
+    :ms0, (:yr,:i,:m), "Margin Supply"
+    :md0, (:yr,:m,:i), "Margin Demand"
+    :fs0, (:yr,:i), "Household Supply"
+    :y0, (:yr,:i), "Gross Output"
+    :a0, (:yr,:i), "Armington Supply"
+    :tm0, (:yr,:i), "Tax net subsidy rate on intermediate demand"
+    :ta0, (:yr,:i), "Import Tariff"
+    :ty0, (:yr,:j), "Output tax rate"
+    end);
+
+    GU[:s0][:yr,:j] = sum(GU[:ys0][:yr,:j,:i],dims=2);
+
+    GU[:ms0][:yr,:i,[:trd]] = -min.(0, GU[:mrg0][:yr,:i])
+    GU[:ms0][:yr,:i,[:trn]] = -min.(0, GU[:trn0][:yr,:i])
+
+    GU[:md0][:yr,[:trd],:i] = max.(0, GU[:mrg0][:yr,:i])
+    GU[:md0][:yr,[:trn],:i] = max.(0, GU[:trn0][:yr,:i])
+
+    GU[:fs0][:yr,:i] = -min.(0, GU[:fd0][:yr,:i,[:pce]])
+
+
+
+
+    GU[:y0][:yr,:i] = dropdims(sum(GU[:ys0][:yr,:j,:i],dims=2),dims=2) + GU[:fs0][:yr,:i] - dropdims(sum(GU[:ms0][:yr,:i,:m],dims=3),dims=3)
+
+    GU[:a0][:yr,:i] = sum(GU[:id0][:yr,:i,:j],dims=3) + sum(GU[:fd0][:yr,:i,:fd],dims=3)
+
+
+    mask = GU[:m0][:yr,:i] .>0
+    GU[:tm0][mask] = GU[:duty0][mask]./GU[:m0][mask]
+
+    mask = GU[:a0][:yr,:i] .!= 0
+    GU[:ta0][mask] = (GU[:tax0][mask] - GU[:sbd0][mask]) ./ GU[:a0][mask]
+
+    mask = dropdims(sum(GU[:ys0][:yr,:j,:i],dims=3) .!= 0,dims=3)
+    othtax = GU[:va0][:yr,[:othtax],:i]
+    s0 = dropdims(sum(GU[:ys0][:yr,:j,:i],dims=3),dims=3)
+    GU[:ty0][mask]  = othtax[mask] ./ s0[mask]
+
+
+    #####################
+    ## Negative Values ##
+    #####################
+
+
+    GU[:a0][:yr,:i] = max.(0, GU[:a0][:yr,:i])
+    GU[:x0][:yr,:i] = max.(0, GU[:x0][:yr,:i])
+    GU[:y0][:yr,:i] = max.(0, GU[:y0][:yr,:i])
+
+
+
+    GU[:fd0][:yr,:i,[:pce]] = max.(0, GU[:fd0][:yr,:i,[:pce]]);
+
+    #THis is stupid.
+    GU[:duty0][GU[:m0].==0] = (GU[:duty0][GU[:m0].==0] .=1);
+
+    m_shr = GamsParameter(GU,(:i,))
+    va_shr = GamsParameter(GU,(:va,:j))
+
+    m_shr[:i] = transpose(sum(GU[:m0][:yr,:i],dims = 1)) ./ sum(GU[:m0][:yr,:i])
+    va_shr[:va,:j] = dropdims(sum(GU[:va0][:yr,:va,:j],dims=1) ./ sum(GU[:va0][:yr,:va,:j],dims=(1,2)),dims=1)
+
+    for yr∈GU[:yr],i∈GU[:i]
+        GU[:m0][[yr],[i]] = GU[:m0][[yr],[i]]<0 ? m_shr[[i]]*sum(GU[:m0][[yr],:]) : GU[:m0][[yr],[i]] 
+    end
+
+    for year∈GU[:yr]
+        #mask = GU[:m0][[year],:i] .< 0
+        #GU[:m0][[year],mask] = m_shr[mask]*sum(GU[:m0][[year],mask])
+
+        for va∈GU[:va], j∈GU[:j]
+            GU[:va0][[year],[va],[j]] = GU[:va0][[year],[va],[j]]<0 ? va_shr[[va],[j]]*sum(GU[:va0][[year],:va,[j]]) : GU[:va0][[year],[va],[j]]
+        end
+    end
+
+    # Non-tracked marginal categories.
+
+    IMRG = [:mvt,:fbt,:gmt]
+
+
+    for yr∈GU[:yr],i∈IMRG
+        GU[:y0][[yr],[i]] = 0
+        GU[:a0][[yr],[i]] = 0
+        GU[:tax0][[yr],[i]] = 0
+        GU[:sbd0][[yr],[i]] = 0
+        GU[:x0][[yr],[i]] = 0
+        GU[:m0][[yr],[i]] = 0
+        GU[:duty0][[yr],[i]] = 0
+        for m∈GU[:m]    
+            GU[:md0][[yr],[m],[i]] = 0
+        end
+    end
+    
+    #I disagree with this. I don't recall why, I'll figure it out.
+    for yr∈GU[:yr],j∈GU[:j]
+        GU[:va0][[yr],[:othtax],[j]] = 0
+    end
 
     return GU
 
@@ -89,7 +211,9 @@ function load_use_year!(GU::GamsUniverse,use_table,year::Symbol,bea_map)
     GU[:va0][[year],value_added,industries] = Float64.(Y[82:84,3:73])/1_000;
     GU[:fd0][[year],commodities,final_demand] = Float64.(Y[8:80,fd_range])/1_000;
     GU[:x0][[year],commodities] = Float64.(Y[8:80,81])/1_000;
-    GU[:ts0][[year],tax_labels,industries] = Float64.(Y[87:88,3:73]);
+    GU[:ts0][[year],tax_labels,industries] = Float64.(Y[87:88,3:73])/1_000;
+
+    GU[:ts0][[year],[:subsidies],:j] = - GU[:ts0][[year],[:subsidies],:j]
 
     return GU
 
