@@ -7,7 +7,7 @@ using GamsStructure
 using CSV 
 using XLSX
 
-export national_model_mcp,load_bea_data
+export national_model_mcp,load_bea_data,state_dissagregation_model_mcp_year
 
 
 include("core/nationalmodel.jl")
