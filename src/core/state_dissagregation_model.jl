@@ -96,7 +96,7 @@ function state_dissagregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
 
 
     @variables(model,begin
-        Y[r=R,s=S]>=0, (start =1,)
+        Y[R,S]>=0, (start = 1,)
         X[R,G]>=0, (start =1,)
         A[R,G]>=0, (start =1,)
         C[R]>=0, (start =1,)
@@ -107,7 +107,7 @@ function state_dissagregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
         PD[R,G]>=0, (start =1,)
         PN[G]>=0, (start =1,)
         PL[R]>=0, (start =1,)
-        PK[r=R,s=S]>=0, (start =1,)
+        PK[R,S]>=0, (start =1,)
         PM[R,M]>=0, (start =1,)
         PC[R]>=0, (start =1,)
         PFX>=0, (start =1,)
