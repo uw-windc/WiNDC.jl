@@ -68,11 +68,9 @@ function calibrate_national_model(GU::GamsUniverse,year::Symbol)
 
 
     #May go elsewhere
-    GU[:i][:use].active = false
-    GU[:i][:oth].active = false
-
-    GU[:j][:use].active = false
-    GU[:j][:oth].active = false
+    deactivate(GU,:i,:use,:oth)
+    deactivate(GU,:j,:use,:oth)
+    
 
     I       = [i for i in GU[:i]]
     J       = [j for j in GU[:j]]
