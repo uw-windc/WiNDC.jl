@@ -1,15 +1,165 @@
+include("./bea_api/bea_api.jl")
+
+
+function _bea_io_initialize_universe(set_path="./windc_sets")
+
+    GU = load_universe(set_path)
+
+    @create_parameters(GU,begin
+        #Use
+        :id0, (:yr,:i,:j), "Intermediate Demand"
+        :fd0, (:yr,:i,:fd), "Final Demand"
+        :x0, (:yr,:i), "Exports"
+        :va0, (:yr, :va,:j), "Value Added"
+        :ts0, (:yr,:ts,:j), "Taxes and Subsidies"
+        :othtax, (:yr,:j), "Other taxes"
+
+        #Supply
+        :ys0, (:yr,:j,:i), "Intermediate Supply"
+        :m0, (:yr,:i),   "Imports"
+        :mrg0, (:yr,:i), "Trade Margins"
+        :trn0, (:yr,:i), "Transportation Costs"
+        :cif0, (:yr,:i), ""
+        :duty0,(:yr,:i), "Import Duties"
+        :tax0, (:yr,:i), "Taxes on Products"
+        :sbd0, (:yr,:i), "Subsidies"
+    end);
+
+
+    return GU
+end
+
+function _bea_io_fill_parameter!(GU,df_full,parm,col_set_link,additional_filters)
+    df = deepcopy(df_full)
+
+    for s in domain(GU[parm])
+        col = col_set_link[s]
+        filter!(col => x-> x in GU[s], df)
+    end
+
+    if parm in keys(additional_filters)
+        
+        col, good = additional_filters[parm]
+        filter!(col => x-> x == good, df)
+    end
+
+    columns = [col_set_link[e] for e in domain(GU[parm])]
+    for row in eachrow(df)
+        d = [[row[e]] for e∈columns]
+        GU[parm][d...] = row[:DataValue]
+    end
+
+end
+
+
+
+struct WiNDC_notation
+    data::DataFrame
+    default::Symbol
+end
+
+struct notation_link
+    data::WiNDC_notation
+    dirty::Symbol
+    clean::Symbol
+end
+
+
+function apply_notation!(df, notation)
+    windc_data = notation.data
+    data = windc_data.data
+    default = windc_data.default
+
+    dirty = notation.dirty
+    clean = notation.clean
+
+    if default != clean
+        cols = [clean,default]
+    else
+        cols = [clean]
+    end
+
+    df = innerjoin(data[!,cols],df,on = clean => dirty)
+
+    if default != clean
+        select!(df,Not(clean))
+    end
+
+    return df
+
+end
+
 
 """
-
-
 At the moment several paths are hard coded. This will need to change.
 
 I suggest making a directory with a helper JSON to point to all the necessary 
 data. 
 """
-function load_bea_data(use_path::String,supply_path::String)
+function load_bea_data(api_key::String,set_path,data_defines_path)
+
+    GU = _bea_io_initialize_universe(set_path)
 
 
+    use = get_bea_io_table(api_key,:use)
+    supply = get_bea_io_table(api_key,:supply);
+
+    include(data_defines_path)
+    notations = []
+    push!(notations,notation_link(bea_commodity,:RowCode,:bea_code))
+    push!(notations,notation_link(bea_industry,:ColCode,:bea_code))
+
+    for notation in notations
+        use = apply_notation!(use,notation)
+        supply = apply_notation!(supply,notation)
+    end
+    
+    use[!,:industry] = Symbol.(use[!,:industry])
+    use[!,:commodity] = Symbol.(use[!,:commodity])
+    use[!,:Year] = Symbol.(use[!,:Year]);
+    
+    supply[!,:industry] = Symbol.(supply[!,:industry])
+    supply[!,:commodity] = Symbol.(supply[!,:commodity])
+    supply[!,:Year] = Symbol.(supply[!,:Year]);
+
+
+    col_set_link = Dict(:yr => :Year, 
+                    :j => :industry, 
+                    :i => :commodity,
+                    :fd => :industry,
+                    :va => :commodity,
+                    :ts => :commodity
+    )
+
+    additional_filters = Dict(
+        :othtax => (:commodity,:othtax),
+        :x0 => (:industry, :exports),
+
+        :m0 => (:industry, :imports),
+        :mrg0 => (:industry, :Margins),
+        :trn0 => (:industry, :TrnCost),
+        :cif0 => (:industry, :ciffob),
+        :duty0 => (:industry, :Duties),
+        :tax0 => (:industry, :Tax),
+        :sbd0 => (:industry, :subsidies)
+    )
+
+    #Use
+    for parm in [:id0,:fd0,:va0,:ts0,:othtax,:x0]
+        _bea_io_fill_parameter!(GU, use, parm, col_set_link, additional_filters)
+    end
+
+
+
+    #Supply
+    for parm in [:ys0,:m0,:mrg0,:trn0,:cif0,:duty0,:tax0,:sbd0]
+        _bea_io_fill_parameter!(GU, supply, parm, col_set_link, additional_filters)
+    end
+
+
+
+
+    #=
     # Load sets
     # TO DO: Don't hard code this.
     GU = load_universe("./windc_sets")
@@ -54,6 +204,10 @@ function load_bea_data(use_path::String,supply_path::String)
         load_use_year!(GU,use,year,bea_map)
         load_supply_year!(GU,supply,year,bea_map)
     end
+
+    =#
+
+
 
     # Define parameters
 
