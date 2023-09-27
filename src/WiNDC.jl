@@ -2,7 +2,8 @@ module WiNDC
 
 
 using JuMP
-using Complementarity
+using PATHSolver
+#using Complementarity
 using GamsStructure
 using CSV 
 using XLSX
