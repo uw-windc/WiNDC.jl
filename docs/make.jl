@@ -25,9 +25,9 @@ makedocs(
 
 
 
-#deploydocs(
-#    repo = "github.com/mitchphillipson/GamsStructure.jl",
-#    target = "build",
-#    branch = "gh-pages",
- #   versions = ["stable" => "v^", "v#.#" ],
-#)
+deploydocs(
+    repo = "https://github.com/uw-windc/WiNDC.jl",
+    target = "build",
+    branch = "gh-pages",
+    versions = ["stable" => "v^", "v#.#" ],
+)
