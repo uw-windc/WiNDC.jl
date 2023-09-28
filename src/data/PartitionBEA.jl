@@ -1,5 +1,5 @@
 include("./bea_api/bea_api.jl")
-
+include("./calibrate.jl")
 
 function _bea_io_initialize_universe(set_path="./windc_sets")
 
@@ -91,10 +91,15 @@ end
 
 
 """
-At the moment several paths are hard coded. This will need to change.
+    load_bea_data_api(api_key::String,set_path,data_defines_path)
 
-I suggest making a directory with a helper JSON to point to all the necessary 
-data. 
+Load the the BEA data using the BEA API. 
+
+In order to use this you must have an api key from the BEA. [Register here](https://apps.bea.gov/api/signup/)
+to obtain an key.
+
+Currently (Septerber 28, 2023) this will only return years 2017-2022 due
+to the BEA restricting the API. 
 """
 function load_bea_data_api(api_key::String,set_path,data_defines_path)
 
@@ -105,15 +110,35 @@ function load_bea_data_api(api_key::String,set_path,data_defines_path)
 
     _bea_data_break!(GU)
 
+    calibrate_national!(GU)
+
     return GU
 
 end
 
+"""
+    load_bea_data_local(use_path::String,
+                        supply_path::String,
+                        set_path::String,
+                        map_path::String)
 
+Load the BEA data from a local XLSX file. This data is available
+[at the WiNDC webpage](https://windc.wisc.edu/downloads.html). The use table is
+
+    windc_2021/BEA/IO/Use_SUT_Framework_1997-2021_SUM.xlsx 
+    
+and the supply table is
+
+    windc_2021/BEA/IO/Supply_Tables_1997-2021_SUM.xlsx
+"""
 function load_bea_data_local(use_path::String,
                              supply_path::String,
                              set_path::String,
                              map_path::String)
+
+    #set_path = "./windc_sets"
+    #map_path = "./bea_io/bea_all.csv"
+
     GU = _bea_io_initialize_universe(set_path)
 
      #BEA Map
@@ -135,6 +160,8 @@ function load_bea_data_local(use_path::String,
      end
 
      _bea_data_break!(GU)
+
+     calibrate_national!(GU)
 
      return GU
 
