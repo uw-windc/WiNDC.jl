@@ -1,13 +1,40 @@
+"""
+    national_model_mcp(GU::GamsUniverse;solver = PATHSolver.Optimizer)
+
+Run all years of the the national model. Returns a dictionary containing
+each year.
+"""
+function national_model_mcp(GU::GamsUniverse;solver = PATHSolver.Optimizer)
+
+    models = Dict()
+
+    for year∈GU[:yr]
+        m = national_model_mcp_year(GU,year; solver = solver)
+        set_silent(m)
+        #set_attribute(m,"cumulative_iteration_limit",0)
+        optimize!(m)
+        #out *= @capture_out solveMCP(m)
+        models[year] = m
+
+    end
+
+    return models
+
+end
 
 
 """
-Self notes:
-    1. v0_0 is multi year, va0 is single year
-    2. The four theta's get defined as new parameters
+    national_model_mcp_year(GU::GamsUniverse,year::Symbol;solver = PATHSolver.Optimizer)
+
+Run the national model for a single year.    
 """
+function national_model_mcp_year(GU::GamsUniverse,year::Symbol;solver = PATHSolver.Optimizer)
 
-function national_model_mcp(GU::GamsUniverse,year::Symbol;solver = PATHSolver.Optimizer)
 
+    """
+    Self notes:
+        1. The four theta's get defined as new parameters
+    """
 
     #################
     ### GU ##########
@@ -18,9 +45,9 @@ function national_model_mcp(GU::GamsUniverse,year::Symbol;solver = PATHSolver.Op
     M = GU[:m]
     
     
-    Y_ = [j for j in GU[:j] if sum(GU[:ys_0][[year],[j],[i]] for i∈I)!=0]
-    A_ = [i for i in GU[:i] if GU[:a_0][[year],[i]]!=0]
-    PY_ = [i for i in GU[:i] if sum(GU[:ys_0][[year],[j],[i]] for j∈J)!=0]
+    Y_ = [j for j in GU[:j] if sum(GU[:ys0][[year],[j],[i]] for i∈I)!=0]
+    A_ = [i for i in GU[:i] if GU[:a0][[year],[i]]!=0]
+    PY_ = [i for i in GU[:i] if sum(GU[:ys0][[year],[j],[i]] for j∈J)!=0]
     XFD = [fd for fd in GU[:fd] if fd!=:pce]
     
     
@@ -28,31 +55,31 @@ function national_model_mcp(GU::GamsUniverse,year::Symbol;solver = PATHSolver.Op
     ## Parameters ######
     ####################
     
-    va0 = GU[:va_0]
-    m0 = GU[:m_0]
-    tm0 = GU[:tm_0]
-    y0 = GU[:y_0]
-    a0 = GU[:a_0]
-    ta0 = GU[:ta_0]
-    x0 = GU[:x_0]
-    fd0 = GU[:fd_0]
+    va0 = GU[:va0]
+    m0 = GU[:m0]
+    tm0 = GU[:tm0]
+    y0 = GU[:y0]
+    a0 = GU[:a0]
+    ta0 = GU[:ta0]
+    x0 = GU[:x0]
+    fd0 = GU[:fd0]
     
     
     
-    ms0 = GU[:ms_0]
-    bopdef = GU[:bopdef_0][[year]]
-    fs0 = GU[:fs_0]
-    ys0 = GU[:ys_0]
-    id0 = GU[:id_0]
-    md0 = GU[:md_0]
+    ms0 = GU[:ms0]
+    bopdef = GU[:bopdef0][[year]]
+    fs0 = GU[:fs0]
+    ys0 = GU[:ys0]
+    id0 = GU[:id0]
+    md0 = GU[:md0]
     
     ty = GamsParameter(GU,(:yr,:i))
     tm = GamsParameter(GU,(:yr,:i))
     ta = GamsParameter(GU,(:yr,:i))
     
-    ty[:yr,:i] = GU[:ty_0][:yr,:i]
-    tm[:yr,:i] = GU[:tm_0][:yr,:i] *0
-    ta[:yr,:i] = GU[:ta_0][:yr,:i] *0
+    ty[:yr,:i] = GU[:ty0][:yr,:i] 
+    tm[:yr,:i] = GU[:tm0][:yr,:i] 
+    ta[:yr,:i] = GU[:ta0][:yr,:i] 
     
     
     thetava = GamsParameter(GU,(:va,:j)) #GU[:thetava]
@@ -97,7 +124,7 @@ function national_model_mcp(GU::GamsUniverse,year::Symbol;solver = PATHSolver.Op
         PVA[VA]>=0, (start = 1,)
         PM[M]>=0,   (start = 1,)
         PFX>=0,     (start = 1,)
-        RA>=0,      (start = 1000,)
+        RA>=0,      (start = sum(fd0[[year],:i,[:pce]]),)
     end)
     
     ####################
