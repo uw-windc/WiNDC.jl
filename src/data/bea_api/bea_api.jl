@@ -63,5 +63,7 @@ function get_bea_io_table(api_key::String, table::Symbol)
 
     df[!,:DataValue] = parse_missing.(df[!,:DataValue])
 
+    df[!,:DataValue] = df[!,:DataValue]./1_000
+
     return df[!,[:Year,:RowCode,:ColCode,:DataValue]]    
 end
