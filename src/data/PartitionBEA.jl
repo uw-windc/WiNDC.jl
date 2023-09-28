@@ -96,118 +96,53 @@ At the moment several paths are hard coded. This will need to change.
 I suggest making a directory with a helper JSON to point to all the necessary 
 data. 
 """
-function load_bea_data(api_key::String,set_path,data_defines_path)
+function load_bea_data_api(api_key::String,set_path,data_defines_path)
 
     GU = _bea_io_initialize_universe(set_path)
 
 
-    use = get_bea_io_table(api_key,:use)
-    supply = get_bea_io_table(api_key,:supply);
+    load_supply_use_api!(GU,api_key,data_defines_path)
 
-    include(data_defines_path)
-    notations = []
-    push!(notations,notation_link(bea_commodity,:RowCode,:bea_code))
-    push!(notations,notation_link(bea_industry,:ColCode,:bea_code))
+    _bea_data_break!(GU)
 
-    for notation in notations
-        use = apply_notation!(use,notation)
-        supply = apply_notation!(supply,notation)
-    end
-    
-    use[!,:industry] = Symbol.(use[!,:industry])
-    use[!,:commodity] = Symbol.(use[!,:commodity])
-    use[!,:Year] = Symbol.(use[!,:Year]);
-    
-    supply[!,:industry] = Symbol.(supply[!,:industry])
-    supply[!,:commodity] = Symbol.(supply[!,:commodity])
-    supply[!,:Year] = Symbol.(supply[!,:Year]);
+    return GU
+
+end
 
 
-    col_set_link = Dict(:yr => :Year, 
-                    :j => :industry, 
-                    :i => :commodity,
-                    :fd => :industry,
-                    :va => :commodity,
-                    :ts => :commodity
-    )
+function load_bea_data_local(use_path::String,
+                             supply_path::String,
+                             set_path::String,
+                             map_path::String)
+    GU = _bea_io_initialize_universe(set_path)
 
-    additional_filters = Dict(
-        :othtax => (:commodity,:othtax),
-        :x0 => (:industry, :exports),
+     #BEA Map
 
-        :m0 => (:industry, :imports),
-        :mrg0 => (:industry, :Margins),
-        :trn0 => (:industry, :TrnCost),
-        :cif0 => (:industry, :ciffob),
-        :duty0 => (:industry, :Duties),
-        :tax0 => (:industry, :Tax),
-        :sbd0 => (:industry, :subsidies)
-    )
+     X = CSV.File(map_path,stringtype = String)
+     codes = [row[:bea_code] for row in X]
+     windc_label = Symbol.([row[:windc_label] for row in X])
+     bea_map = Dict(zip(codes,windc_label));
+ 
+ 
+     #Read use/supply tables.
+ 
+     use = XLSX.readxlsx(use_path)
+     supply = XLSX.readxlsx(supply_path)
+ 
+     for year in GU[:yr]
+         load_use_year!(GU,use,year,bea_map)
+         load_supply_year!(GU,supply,year,bea_map)
+     end
 
-    #Use
-    for parm in [:id0,:fd0,:va0,:ts0,:othtax,:x0]
-        _bea_io_fill_parameter!(GU, use, parm, col_set_link, additional_filters)
-    end
+     _bea_data_break!(GU)
 
-
-
-    #Supply
-    for parm in [:ys0,:m0,:mrg0,:trn0,:cif0,:duty0,:tax0,:sbd0]
-        _bea_io_fill_parameter!(GU, supply, parm, col_set_link, additional_filters)
-    end
+     return GU
 
 
+end
 
 
-    #=
-    # Load sets
-    # TO DO: Don't hard code this.
-    GU = load_universe("./windc_sets")
-
-    #Create empty parameters
-
-    @create_parameters(GU,begin
-        #Use
-        :id0, (:yr,:i,:j), "Intermediate Demand"
-        :fd0, (:yr,:i,:fd), "Final Demand"
-        :x0, (:yr,:i), "Exports"
-        :va0, (:yr, :va,:j), "Value Added"
-        :ts0, (:yr,:ts,:j), "Taxes and Subsidies"
-        :othtax, (:yr,:j), "Other taxes"
-
-        #Supply
-        :ys0, (:yr,:j,:i), "Intermediate Supply"
-        :m0, (:yr,:i),   "Imports"
-        :mrg0, (:yr,:i), "Trade Margins"
-        :trn0, (:yr,:i), "Transportation Costs"
-        :cif0, (:yr,:i), ""
-        :duty0,(:yr,:i), "Import Duties"
-        :tax0, (:yr,:i), "Taxes on Products"
-        :sbd0, (:yr,:i), "Subsidies"
-    end);
-
-
-    #BEA Map
-
-    X = CSV.File("./mappings/BEA/bea_all.csv",stringtype = String)
-    codes = [row[:bea_code] for row in X]
-    windc_label = Symbol.([row[:windc_label] for row in X])
-    bea_map = Dict(zip(codes,windc_label));
-
-
-    #Read use/supply tables.
-
-    use = XLSX.readxlsx(use_path)
-    supply = XLSX.readxlsx(supply_path)
-
-    for year in GU[:yr]
-        load_use_year!(GU,use,year,bea_map)
-        load_supply_year!(GU,supply,year,bea_map)
-    end
-
-    =#
-
-
+function _bea_data_break!(GU)
 
     # Define parameters
 
@@ -228,15 +163,15 @@ function load_bea_data(api_key::String,set_path,data_defines_path)
     # More parameters
 
     @create_parameters(GU,begin
-    :s0, (:yr,:j), "Aggregate Supply"
-    :ms0, (:yr,:i,:m), "Margin Supply"
-    :md0, (:yr,:m,:i), "Margin Demand"
-    :fs0, (:yr,:i), "Household Supply"
-    :y0, (:yr,:i), "Gross Output"
-    :a0, (:yr,:i), "Armington Supply"
-    :tm0, (:yr,:i), "Tax net subsidy rate on intermediate demand"
-    :ta0, (:yr,:i), "Import Tariff"
-    :ty0, (:yr,:j), "Output tax rate"
+        :s0, (:yr,:j), "Aggregate Supply"
+        :ms0, (:yr,:i,:m), "Margin Supply"
+        :md0, (:yr,:m,:i), "Margin Demand"
+        :fs0, (:yr,:i), "Household Supply"
+        :y0, (:yr,:i), "Gross Output"
+        :a0, (:yr,:i), "Armington Supply"
+        :tm0, (:yr,:i), "Tax net subsidy rate on intermediate demand"
+        :ta0, (:yr,:i), "Import Tariff"
+        :ty0, (:yr,:j), "Output tax rate"
     end);
 
     GU[:s0][:yr,:j] = sum(GU[:ys0][:yr,:j,:i],dims=2);
@@ -335,7 +270,65 @@ end
 
 
 
+function load_supply_use_api!(GU,api_key::String, data_defines_path::String)
 
+    use = get_bea_io_table(api_key,:use)
+    supply = get_bea_io_table(api_key,:supply);
+
+    include(data_defines_path)
+    notations = []
+    push!(notations,notation_link(bea_commodity,:RowCode,:bea_code))
+    push!(notations,notation_link(bea_industry,:ColCode,:bea_code))
+
+    for notation in notations
+        use = apply_notation!(use,notation)
+        supply = apply_notation!(supply,notation)
+    end
+    
+    use[!,:industry] = Symbol.(use[!,:industry])
+    use[!,:commodity] = Symbol.(use[!,:commodity])
+    use[!,:Year] = Symbol.(use[!,:Year]);
+    
+    supply[!,:industry] = Symbol.(supply[!,:industry])
+    supply[!,:commodity] = Symbol.(supply[!,:commodity])
+    supply[!,:Year] = Symbol.(supply[!,:Year]);
+
+
+    col_set_link = Dict(:yr => :Year, 
+                    :j => :industry, 
+                    :i => :commodity,
+                    :fd => :industry,
+                    :va => :commodity,
+                    :ts => :commodity
+    )
+
+    additional_filters = Dict(
+        :othtax => (:commodity,:othtax),
+        :x0 => (:industry, :exports),
+
+        :m0 => (:industry, :imports),
+        :mrg0 => (:industry, :Margins),
+        :trn0 => (:industry, :TrnCost),
+        :cif0 => (:industry, :ciffob),
+        :duty0 => (:industry, :Duties),
+        :tax0 => (:industry, :Tax),
+        :sbd0 => (:industry, :subsidies)
+    )
+
+    #Use
+    for parm in [:id0,:fd0,:va0,:ts0,:othtax,:x0]
+        _bea_io_fill_parameter!(GU, use, parm, col_set_link, additional_filters)
+    end
+
+
+
+    #Supply
+    for parm in [:ys0,:m0,:mrg0,:trn0,:cif0,:duty0,:tax0,:sbd0]
+        _bea_io_fill_parameter!(GU, supply, parm, col_set_link, additional_filters)
+    end
+
+    return GU
+end
 
 
 
@@ -356,10 +349,10 @@ function load_use_year!(GU::GamsUniverse,use_table,year::Symbol,bea_map)
 
     commodities = get.(Ref(bea_map),row_labels[8:80],missing)
     industries = get.(Ref(bea_map),column_labels[3:73],missing)
-    value_added = get.(Ref(bea_map),row_labels[82:84],missing)
+    value_added = get.(Ref(bea_map),row_labels[82:83],missing)
+    push!(value_added, get(bea_map, row_labels[85],missing))
     final_demand = get.(Ref(bea_map),column_labels[fd_range],missing)
-    tax_labels = get.(Ref(bea_map), row_labels[87:88],missing)
-
+    tax_labels = get.(Ref(bea_map), row_labels[88:89],missing)
 
     GU[:id0][[year],commodities,industries] = Float64.(Y[8:80,3:73])/1_000;
     GU[:va0][[year],value_added,industries] = Float64.(Y[82:84,3:73])/1_000;
