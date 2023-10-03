@@ -1,9 +1,11 @@
 include("./bea_api/bea_api.jl")
 include("./calibrate.jl")
+include("./sets/sets.jl")
 
-function _bea_io_initialize_universe(set_path="./windc_sets")
+function _bea_io_initialize_universe(years = 1997:2021)
 
-    GU = load_universe(set_path)
+    GU = GamsUniverse()
+    initialize_sets!(GU,years)
 
     @create_parameters(GU,begin
         #Use
@@ -91,7 +93,7 @@ end
 
 
 """
-    load_bea_data_api(api_key::String,set_path,data_defines_path)
+    load_bea_data_api(api_key::String,data_defines_path; years = 1997:2021)
 
 Load the the BEA data using the BEA API. 
 
@@ -101,9 +103,9 @@ to obtain an key.
 Currently (Septerber 28, 2023) this will only return years 2017-2022 due
 to the BEA restricting the API. 
 """
-function load_bea_data_api(api_key::String,set_path,data_defines_path)
+function load_bea_data_api(api_key::String,data_defines_path; years = 1997:2021)
 
-    GU = _bea_io_initialize_universe(set_path)
+    GU = _bea_io_initialize_universe(years)
 
 
     load_supply_use_api!(GU,api_key,data_defines_path)
@@ -119,8 +121,8 @@ end
 """
     load_bea_data_local(use_path::String,
                         supply_path::String,
-                        set_path::String,
-                        map_path::String)
+                        map_path::String;
+                        years = 1997:2021)
 
 Load the BEA data from a local XLSX file. This data is available
 [at the WiNDC webpage](https://windc.wisc.edu/downloads.html). The use table is
@@ -133,13 +135,13 @@ and the supply table is
 """
 function load_bea_data_local(use_path::String,
                              supply_path::String,
-                             set_path::String,
-                             map_path::String)
+                             map_path::String;
+                             years = 1997:2021)
 
     #set_path = "./windc_sets"
     #map_path = "./bea_io/bea_all.csv"
 
-    GU = _bea_io_initialize_universe(set_path)
+    GU = _bea_io_initialize_universe(years)
 
      #BEA Map
 
