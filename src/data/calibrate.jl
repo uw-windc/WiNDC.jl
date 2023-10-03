@@ -177,36 +177,36 @@ function calibrate_national_model(GU::GamsUniverse,year::Symbol)
     fix.(fd0_[IMRG,FD],0,force=true)
 
     @expression(m,NEWNZ,
-        sum(ys0_[j,i]  for j∈J,i∈I   if ys0[[year],[j],[i]]==0) 
-        + sum(fs0_[i]    for i∈I       if fs0[[year],[i]]==0) 
-        + sum(ms0_[i,m_] for i∈I,m_∈M  if ms0[[year],[i],[m_]]==0) 
-        + sum(y0_[i]     for i∈I       if y0[[year],[i]]==0) 
-        + sum(id0_[i,j]  for i∈I,j∈J   if id0[[year],[i],[j]]==0) 
-        + sum(fd0_[i,fd] for i∈I,fd∈FD if fd0[[year],[i],[fd]]==0) 
-        + sum(va0_[va,j] for va∈VA,j∈J if va0[[year],[va],[j]]==0) 
-        + sum(a0_[i]     for i∈I       if a0[[year],[i]]==0) 
-        + sum(x0_[i]     for i∈I       if x0[[year],[i]]==0) 
-        + sum(m0_[i]     for i∈I       if m0[[year],[i]]==0) 
-        + sum(md0_[m_,i] for m_∈M,i∈I  if md0[[year],[m_],[i]]==0)
+        sum(ys0_[j,i]  for j∈J,i∈I   if ys0[[year],[j],[i]]==0      ) 
+        + sum(fs0_[i]    for i∈I       if fs0[[year],[i]]==0        ) 
+        + sum(ms0_[i,m_] for i∈I,m_∈M  if ms0[[year],[i],[m_]]==0   ) 
+        + sum(y0_[i]     for i∈I       if y0[[year],[i]]==0         ) 
+        + sum(id0_[i,j]  for i∈I,j∈J   if id0[[year],[i],[j]]==0    ) 
+        + sum(fd0_[i,fd] for i∈I,fd∈FD if fd0[[year],[i],[fd]]==0   ) 
+        + sum(va0_[va,j] for va∈VA,j∈J if va0[[year],[va],[j]]==0   ) 
+        + sum(a0_[i]     for i∈I       if a0[[year],[i]]==0         ) 
+        + sum(x0_[i]     for i∈I       if x0[[year],[i]]==0         ) 
+        + sum(m0_[i]     for i∈I       if m0[[year],[i]]==0         ) 
+        + sum(md0_[m_,i] for m_∈M,i∈I  if md0[[year],[m_],[i]]==0   )
     )
 
-    @objective(m,Min, 
-        sum(abs(ys0[[year],[j],[i]])  * (ys0_[j,i]/ys0[[year],[j],[i]]-1)^2   for i∈I,j∈J       if ys0[[year],[j],[i]]!=0)
-        + sum(abs(id0[[year],[i],[j]])  * (id0_[i,j]/id0[[year],[i],[j]]-1)^2   for i∈I,j∈J       if id0[[year],[i],[j]]!=0)
-        + sum(abs(fd0[[year],[i],[fd]]) * (fd0_[i,fd]/fd0[[year],[i],[fd]]-1)^2 for i∈I,fd∈PCE_FD if fd0[[year],[i],[fd]]!=0)
-        + sum(abs(va0[[year],[va],[j]]) * (va0_[va,j]/va0[[year],[va],[j]]-1)^2 for va∈VA,j∈J     if va0[[year],[va],[j]]!=0)
 
-        + sum(abs(fd0[[year],[i],[fd]]) * (fd0_[i,fd]/fd0[[year],[i],[fd]]-1)^2 for i∈I,fd∈OTHFD  if fd0[[year],[i],[fd]]!=0)
-        + sum(abs(fs0[[year],[i]])      * (fs0_[i]/fs0[[year],[i]]-1)^2         for i∈I           if fs0[[year],[i]]!=0)
-        + sum(abs(ms0[[year],[i],[m_]]) * (ms0_[i,m_]/ms0[[year],[i],[m_]]-1)^2 for i∈I,m_∈M      if ms0[[year],[i],[m_]]!=0)
-        + sum(abs(y0[[year],[i]])       * (y0_[i]/y0[[year],[i]]-1)^2           for i∈I           if y0[[year],[i]]!=0)
-        + sum(abs(a0[[year],[i]])       * (a0_[i]/a0[[year],[i]]-1)^2           for i∈I           if a0[[year],[i]]!=0)
-        + sum(abs(x0[[year],[i]])       * (x0_[i]/x0[[year],[i]]-1)^2           for i∈I           if x0[[year],[i]]!=0)
-        + sum(abs(m0[[year],[i]])       * (m0_[i]/m0[[year],[i]]-1)^2           for i∈I           if m0[[year],[i]]!=0)
-        + sum(abs(md0[[year],[m_],[i]]) * (md0_[m_,i]/md0[[year],[m_],[i]]-1)^2 for m_∈M,i∈I      if md0[[year],[m_],[i]]!=0)
+    @objective(m,Min, 
+        sum(abs(ys0[[year],[j],[i]])  * (ys0_[j,i]/ys0[[year],[j],[i]]-1)^2   for i∈I,j∈J       if ys0[[year],[j],[i]]!=0       )
+        + sum(abs(id0[[year],[i],[j]])  * (id0_[i,j]/id0[[year],[i],[j]]-1)^2   for i∈I,j∈J       if id0[[year],[i],[j]]!=0     )
+        + sum(abs(fd0[[year],[i],[fd]]) * (fd0_[i,fd]/fd0[[year],[i],[fd]]-1)^2 for i∈I,fd∈PCE_FD if fd0[[year],[i],[fd]]!=0    )
+        + sum(abs(va0[[year],[va],[j]]) * (va0_[va,j]/va0[[year],[va],[j]]-1)^2 for va∈VA,j∈J     if va0[[year],[va],[j]]!=0    )
+
+        + sum(abs(fd0[[year],[i],[fd]]) * (fd0_[i,fd]/fd0[[year],[i],[fd]]-1)^2 for i∈I,fd∈OTHFD  if fd0[[year],[i],[fd]]!=0    )
+        + sum(abs(fs0[[year],[i]])      * (fs0_[i]/fs0[[year],[i]]-1)^2         for i∈I           if fs0[[year],[i]]!=0         )
+        + sum(abs(ms0[[year],[i],[m_]]) * (ms0_[i,m_]/ms0[[year],[i],[m_]]-1)^2 for i∈I,m_∈M      if ms0[[year],[i],[m_]]!=0    )
+        + sum(abs(y0[[year],[i]])       * (y0_[i]/y0[[year],[i]]-1)^2           for i∈I           if y0[[year],[i]]!=0          )
+        + sum(abs(a0[[year],[i]])       * (a0_[i]/a0[[year],[i]]-1)^2           for i∈I           if a0[[year],[i]]!=0          )
+        + sum(abs(x0[[year],[i]])       * (x0_[i]/x0[[year],[i]]-1)^2           for i∈I           if x0[[year],[i]]!=0          )
+        + sum(abs(m0[[year],[i]])       * (m0_[i]/m0[[year],[i]]-1)^2           for i∈I           if m0[[year],[i]]!=0          )
+        + sum(abs(md0[[year],[m_],[i]]) * (md0_[m_,i]/md0[[year],[m_],[i]]-1)^2 for m_∈M,i∈I      if md0[[year],[m_],[i]]!=0    )
 
         + newnzpenalty * NEWNZ
-
     )
 
 
@@ -290,8 +290,8 @@ function calibrate_market_clearance(GU::GamsUniverse)
 
 
     for yr∈YR,i∈I
-        parm[[yr],[i],[:PA]] = round( G[:a0][[yr],[i]] - sum(G[:fd0][[yr],[i],FD])- sum(G[:id0][[yr],[i],[j]] for j∈J if G[:s0][[yr],[j]]!=0),digits = 6)
-        parm[[yr],[i],[:PY]] = round( sum(G[:ys0][[yr],[j],[i]] for j∈J if G[:s0][[yr],[j]]!=0) + G[:fs0][[yr],[i]] - G[:y0][[yr],[i]] - sum(G[:ms0][[yr],[i],M]),digits=6)
+        parm[[yr],[i],[:PA]] = round( G[:a0][[yr],[i]] - sum(G[:fd0][[yr],[i],FD];init=0)- sum(G[:id0][[yr],[i],[j]] for j∈J if G[:s0][[yr],[j]]!=0;init=0),digits = 6)
+        parm[[yr],[i],[:PY]] = round( sum(G[:ys0][[yr],[j],[i]] for j∈J if G[:s0][[yr],[j]]!=0;init=0) + G[:fs0][[yr],[i]] - G[:y0][[yr],[i]] - sum(G[:ms0][[yr],[i],M];init=0),digits=6)
     end
 
     return parm
