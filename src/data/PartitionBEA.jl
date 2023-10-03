@@ -1,6 +1,7 @@
 include("./bea_api/bea_api.jl")
 include("./calibrate.jl")
 include("./sets/sets.jl")
+include("./bea_io/data_defines.jl")
 
 function _bea_io_initialize_universe(years = 1997:2021)
 
@@ -93,7 +94,7 @@ end
 
 
 """
-    load_bea_data_api(api_key::String,data_defines_path; years = 1997:2021)
+    load_bea_data_api(api_key::String; years = 1997:2021)
 
 Load the the BEA data using the BEA API. 
 
@@ -103,12 +104,12 @@ to obtain an key.
 Currently (Septerber 28, 2023) this will only return years 2017-2022 due
 to the BEA restricting the API. 
 """
-function load_bea_data_api(api_key::String,data_defines_path; years = 1997:2021)
+function load_bea_data_api(api_key::String; years = 1997:2021)
 
     GU = _bea_io_initialize_universe(years)
 
 
-    load_supply_use_api!(GU,api_key,data_defines_path)
+    load_supply_use_api!(GU,api_key)
 
     _bea_data_break!(GU)
 
@@ -299,15 +300,12 @@ end
 
 
 
-function load_supply_use_api!(GU,api_key::String, data_defines_path::String)
+function load_supply_use_api!(GU,api_key::String)
 
     use = get_bea_io_table(api_key,:use)
     supply = get_bea_io_table(api_key,:supply);
 
-    include(data_defines_path)
-    notations = []
-    push!(notations,notation_link(bea_commodity,:RowCode,:bea_code))
-    push!(notations,notation_link(bea_industry,:ColCode,:bea_code))
+    notations = bea_io_notations()
 
     for notation in notations
         use = apply_notation!(use,notation)
@@ -343,6 +341,9 @@ function load_supply_use_api!(GU,api_key::String, data_defines_path::String)
         :tax0 => (:industry, :Tax),
         :sbd0 => (:industry, :subsidies)
     )
+
+
+    #return (use,supply,GU)
 
     #Use
     for parm in [:id0,:fd0,:va0,:ts0,:othtax,:x0]
