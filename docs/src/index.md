@@ -37,7 +37,6 @@ are located in the directory:
 using WiNDC
 using GamsStructure
 
-api_key = #paste API key here
 GU = load_bea_data_local("path_to_use_table",
                          "path_to_supply_table",
 );
