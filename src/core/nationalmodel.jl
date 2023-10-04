@@ -11,10 +11,8 @@ function national_model_mcp(GU::GamsUniverse;solver = PATHSolver.Optimizer)
     for year∈GU[:yr]
         m = national_model_mcp_year(GU,year; solver = solver)
         set_silent(m)
-        #set_attribute(m,"cumulative_iteration_limit",0)
         optimize!(m)
-        #out *= @capture_out solveMCP(m)
-        models[year] = m
+        models[parse(Int,string(year))] = m
 
     end
 
