@@ -13,10 +13,9 @@ Coming soon
 # Function Listing
 
 ```@docs
-load_bea_data_api(api_key::String,set_path,data_defines_path)
+load_bea_data_api(api_key::String;year=1997:2021)
 load_bea_data_local(use_path::String,
-                             supply_path::String,
-                             set_path::String,
-                             map_path::String)
+                             supply_path::String;
+                             year=1997;2021)
 national_model_mcp(GU::GamsUniverse;solver = PATHSolver.Optimizer)
 ```
