@@ -19,9 +19,12 @@ export national_model_mcp,load_bea_data_api,load_bea_data_local, verify_calibrat
 
 include("helper_functions.jl")
 include("data/notations.jl")
+include("data/core/bea_api/bea_api.jl")
 
 include("data/core/PartitionBEA.jl")
 include("core/nationalmodel.jl")
+
+include("data/core/bea_gsp/bea_gsp.jl")
 
 
 
