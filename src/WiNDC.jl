@@ -25,6 +25,8 @@ include("data/core/PartitionBEA.jl")
 include("core/nationalmodel.jl")
 
 include("data/core/bea_gsp/bea_gsp.jl")
+include("data/core/bea_pce/bea_pce.jl")
+include("data/core/census_sgf/census_sgf.jl")
 
 
 
