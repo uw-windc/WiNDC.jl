@@ -2,21 +2,30 @@ include("./data_defines.jl")
 
 function load_raw_faf_data(file_path)
 
-    df_cur = DataFrame(CSV.File(file_path,stringtype=String))
-
-    filter!(:trade_type => x-> x==1,df_cur)
+    df = DataFrame(CSV.File(file_path,stringtype=String))
 
     cols_to_keep = ["dms_origst","dms_destst","dms_mode","sctg2"]
-    push!(cols_to_keep,[ col for col in names(df_cur) if occursin(r"^value_",col)]...)
-    df_cur = select(df_cur, cols_to_keep)
+    push!(cols_to_keep,[ col for col in names(df) if occursin(r"^value_",col)]...)
 
-    df_cur = stack(df_cur, Not(["dms_origst","dms_destst","dms_mode","sctg2"]),
-        value_name = :value, variable_name = :year)
+    df = df |> 
+        x -> filter(:trade_type => y-> y==1, x) |>
+        x -> select(x, cols_to_keep) |> 
+        x -> stack(x, 
+                    Not(["dms_origst","dms_destst","dms_mode","sctg2"]),
+                    value_name = :value, 
+                    variable_name = :year
+                    )
 
-    df_cur[!,:year] = parse.(Int,replace.(df_cur[!,:year], "value_"=>""))
+    df[!,:year] = df[!,:year] |>
+        x -> replace.(x, "value_"=>"") |>
+        x -> parse.(Int, x)
 
-    df_cur = combine(groupby(df_cur, [:dms_origst,:dms_destst,:sctg2,:year]), :value=>sum=>:value)
-    return df_cur
+    df = df |>
+        x -> groupby(x, [:dms_origst,:dms_destst,:sctg2,:year]) |>
+        x -> combine(x, :value=>sum=>:value)
+
+
+    return df
 end
 
 
@@ -25,7 +34,7 @@ function load_faf_data!(GU,current_file_path,history_file_path)
     df_cur = load_raw_faf_data(current_file_path)
     df_hist = load_raw_faf_data(history_file_path)
 
-    df = filter(:year => x-> x<=2021,vcat(df_cur,df_hist))
+    df = filter(:year => x-> x<=2021, vcat(df_cur,df_hist))
 
     notations = []
 
@@ -38,21 +47,30 @@ function load_faf_data!(GU,current_file_path,history_file_path)
         df = WiNDC.apply_notation!(df,notation)
     end
 
-    df = combine(groupby(df,[:dms_dest,:dms_orig,:year,:i]),:value=>sum=> :value)
+    df = df |> 
+        x -> groupby(x,[:dms_dest,:dms_orig,:year,:i]) |>
+        x -> combine(x, :value => sum => :value)
 
-    single_region = df[df[!,:dms_orig] .== df[!,:dms_dest],[:dms_dest,:year,:i,:value]]
-    rename!(single_region, :dms_dest => :r, :value=>:local_supply)
+    single_region = df |>
+        x-> filter([:dms_orig,:dms_dest] => (a,b) -> a==b, x) |>
+        x-> select(x, [:dms_dest,:year,:i,:value]) |>
+        x-> rename(x, :dms_dest => :r, :value=>:local_supply)
 
-    multi_region = df[df[!,:dms_orig] .!= df[!,:dms_dest],:]
+    multi_region = filter([:dms_orig,:dms_dest] => (a,b) -> a!=b, df)
+
 
     #exports
-    Y = combine(groupby(multi_region, [:dms_orig,:year,:i]),:value=>sum=>:exports)
-    single_region = leftjoin(single_region,Y, on = [:r=>:dms_orig,:year,:i])
+    single_region = multi_region |>
+        x -> groupby(x, [:dms_orig,:year,:i]) |>
+        x -> combine(x, :value => sum => :exports) |>
+        x -> leftjoin(single_region, x, on = [:r=>:dms_orig,:year,:i])
 
 
     #exports
-    Y = combine(groupby(multi_region, [:dms_dest,:year,:i]),:value=>sum=>:demand)
-    single_region = leftjoin(single_region,Y, on = [:r=>:dms_dest,:year,:i])
+    single_region = multi_region |>
+        x -> groupby(x, [:dms_dest,:year,:i]) |>
+        x -> combine(x, :value => sum => :demand) |>
+        x -> leftjoin(single_region, x, on = [:r=>:dms_dest,:year,:i])
 
     single_region = coalesce.(single_region,0)
 
@@ -60,11 +78,15 @@ function load_faf_data!(GU,current_file_path,history_file_path)
         sum(x)/length(x)
     end
 
-    Y = combine(groupby(single_region,[:r,:year]),
-        :local_supply => mean => :local_supply,
-        :exports      => mean => :exports,
-        :demand       => mean => :demand
-    )
+    Y = single_region |>
+        x -> groupby(x, [:r,:year]) |>
+        x -> combine(x, 
+                :local_supply=> mean =>:local_supply,
+                :exports => mean => :exports,
+                :demand => mean => :demand
+                    )
+
+    # Make a dataframe with all the goods not present in the FAF data
     X = DataFrame([[i for i∈GU[:i] if i∉ Symbol.(unique(single_region[!,:i]))]],[:i])
 
     single_region = vcat(single_region,crossjoin(X,Y));
@@ -80,6 +102,8 @@ function load_faf_data!(GU,current_file_path,history_file_path)
                         :r => :r,
                         :i => :i 
     )
+
+    single_region[!,[:r,:i,:year]] = Symbol.(single_region[!,[:r,:i,:year]])
 
     fill_parameter!(GU, single_region, :rpc, col_set_link, Dict())
 
