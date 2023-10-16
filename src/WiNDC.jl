@@ -28,6 +28,7 @@ include("data/core/bea_gsp/bea_gsp.jl")
 include("data/core/bea_pce/bea_pce.jl")
 include("data/core/census_sgf/census_sgf.jl")
 include("data/core/faf/faf.jl")
+include("data/core/usa_trade/usa_trade.jl")
 
 
 
