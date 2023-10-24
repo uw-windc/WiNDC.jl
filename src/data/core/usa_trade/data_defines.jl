@@ -7,7 +7,7 @@ regions = DataFrame([
     ("Colorado", "CO", "8"),
     ("Connecticut", "CT", "9"),
     ("Delaware", "DE", "10"),
-    ("District of Columbia", "DC", "11"),
+    ("Dist of Columbia", "DC", "11"),
     ("Florida", "FL", "12"),
     ("Georgia", "GA", "13"),
     ("Hawaii", "HI", "15"),
@@ -44,7 +44,6 @@ regions = DataFrame([
     ("Tennessee", "TN", "47"),
     ("Texas", "TX", "48"),
     ("Utah", "UT", "49"),
-    ("United States", "US", "00"),
     ("Vermont", "VT", "50"),
     ("Virginia", "VA", "51"),
     ("Washington", "WA", "53"),
@@ -165,5 +164,5 @@ naics_map = DataFrame([
 	("9900", :oth),
 ], [:naics,:i])
 
-states = WiNDC.WiNDC_notation(regions,:region_abbv);
+usatrd_states = WiNDC.WiNDC_notation(regions,:region_abbv);
 naics_map = WiNDC.WiNDC_notation(naics_map,:i);

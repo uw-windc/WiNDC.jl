@@ -61,7 +61,7 @@ function load_usa_trade!(GU,data_dir,info_dict)
             [:value,:value_sum,:yr_sum,:yr_r_sum] => ((v,vs,ys,yrs) -> f.(v,vs,ys,yrs))=>:value
         ) |>
         x -> select(x, [:r,:i,:year,:flow,:value]) |>
-        x -> leftjoin(x,usda, on = [:r, :year,:i,:flow],makeunique=true) |>
+        x -> outerjoin(x,usda, on = [:r, :year,:i,:flow],makeunique=true) |>
         x -> coalesce.(x,0) |>
         x -> transform(x, [:value,:value_1] => ((v,v1) -> ifelse.(v1.==0,v,v1))=>:value) |>
         x -> select(x, [:r,:i,:year,:flow,:value]) |>
@@ -106,7 +106,7 @@ function load_raw_usa_trade(data_dir, info_dict)
     out = DataFrame()
     notations = []
 
-    push!(notations, WiNDC.notation_link(states,:State,:region_fullname));
+    push!(notations, WiNDC.notation_link(usatrd_states,:State,:region_fullname));
     push!(notations, WiNDC.notation_link(naics_map,:naics,:naics));    
 
     for (flow,dict) in info_dict
@@ -145,7 +145,7 @@ function load_raw_usda_trade_shares(data_dir,info_dict)
     #C:\Users\mphillipson\Documents\WiNDC\windc_raw_data\windc_2021\USATradeOnline\commodity_detail_by_state_cy.xlsx
     notations = []
 
-    push!(notations, WiNDC.notation_link(states,:State,:region_fullname));
+    push!(notations, WiNDC.notation_link(usatrd_states,:State,:region_fullname));
 
     X = XLSX.readdata("$data_dir/$file_path","Total exports","A3:W55")
     X[1,1] = "State"
