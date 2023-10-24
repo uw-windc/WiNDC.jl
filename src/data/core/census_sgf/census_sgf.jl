@@ -43,8 +43,8 @@ function sgf_load_clean_year(year,data_dir,year_info)
 
     notations = []
 
-    push!(notations,WiNDC.notation_link(state_codes,:government_code,:code))
-    push!(notations,WiNDC.notation_link(states, :state, :region_fullname))
+    push!(notations,WiNDC.notation_link(sgf_state_codes,:government_code,:code))
+    push!(notations,WiNDC.notation_link(sgf_states, :state, :region_fullname))
     push!(notations,WiNDC.notation_link(item_codes, :item_code,:item_code));
     push!(notations,WiNDC.notation_link(sgf_map, :item_name,:sgf_category));
     push!(notations,WiNDC.notation_link(sgf_gams_map, :i,:sgf_category));
@@ -79,20 +79,34 @@ function load_sgf_data!(GU,data_dir,info_dict)
         df = vcat(df,small_df)
     end
 
-    Y = combine(groupby(df,[:i,:year]),:value=>sum)
 
-    df = leftjoin(df,Y,on = [:i,:year])
-    
-    df[!,:value] = df[!,:value]./df[!,:value_sum]
+    #Add DC in regions
+    df = df |>
+        x -> select(x, [:i,:region_abbv,:year,:value]) |>
+        x -> unstack(x, :region_abbv, :value) |>
+        x -> transform(x, :MD => (y->y) => :DC) |> 
+        x -> stack(x, Not(:i,:year),variable_name = :region_abbv) |>
+        x -> transform(x, :region_abbv => (y->Symbol.(y)) => :region_abbv)|>
+        x -> dropmissing(x) 
+
+    #return df
+
+    df = df |>
+        x -> groupby(x, [:i,:year]) |>
+        x -> combine(x, :value=> sum) |>
+        x -> leftjoin(df, x, on = [:i,:year]) |>
+        x -> transform(x, 
+            [:value,:value_sum] => ((v,vs) -> v./vs) => :value)
+
+    #return df
 
     col_set_link = Dict(:yr => :year, 
                         :r => :region_abbv,
                         :i => :i 
                         )
 
-    fill_parameter!(GU, df, :sgf_shr, col_set_link, Dict())
-
-    GU[:sgf_shr][:yr,[:DC],:i] = GU[:sgf_shr][:yr,[:MD],:i]
+    WiNDC.fill_parameter!(GU, df, :sgf_shr, col_set_link, Dict())
 
     return GU
+
 end
