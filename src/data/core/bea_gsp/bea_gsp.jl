@@ -1,4 +1,4 @@
-include("data_defines.jl")
+include("./data_defines.jl")
 
 function load_bea_gsp!(GU,data_dir,gsp_info)
 
@@ -146,7 +146,7 @@ end
 function clean_raw_bea_gsp(df)
     notations = []
 
-    push!(notations,notation_link(states,:state,:region_fullname))
+    push!(notations,notation_link(gsp_states,:state,:region_fullname))
     push!(notations,notation_link(gsp_industry_id,:IndustryID,:gsp_industry_id))
     push!(notations,notation_link(bea_gsp_map,:ComponentName,:bea_code))
     push!(notations,notation_link(bea_gsp_mapsec,:gsp_industry_id,:gdp_industry_id))
@@ -154,11 +154,13 @@ function clean_raw_bea_gsp(df)
 
     #df = load_raw_bea_gsp(data_dir,1997:2021,info_dict)
 
+    #return df
+
     for notation in notations
         df = apply_notation!(df,notation)
     end
 
-  
+ 
 
     df = df[!,[:region_abbv,:year,:gdpcat,:i,:units,:value]]
 
@@ -168,13 +170,16 @@ function clean_raw_bea_gsp(df)
 
 
 
-    df[!,"Thousands of dollars"] = df[!,"Thousands of dollars"]./1000
+    df[!,"Thousands of dollars"] = df[!,"Thousands of dollars"]./1_000
 
     df = dropmissing(stack(df,base_units,variable_name=:units,value_name=:value))
 
-    df[!,:units] = replace(df[!,:units], "Thousands of dollars" => "millions of us dollars (USD)",
-                                    "Millions of current dollars" => "millions of us dollars (USD)"
+    df[!,:units] = replace(df[!,:units], 
+        "Thousands of dollars" => "millions of us dollars (USD)",
+        "Millions of current dollars" => "millions of us dollars (USD)"
     )
+
+
 
     function _filter_out(units,regions)
         out = units == "millions of us dollars (USD)" && 

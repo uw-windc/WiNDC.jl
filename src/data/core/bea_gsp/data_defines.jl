@@ -1,26 +1,3 @@
-gsp_industry_id = DataFrame([
-    [4,5,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,26,
-    27,28,29,30,31,32,33,34,35,37,38,39,40,41,42,43,44,
-    46,47,48,49,52,53,54,55,57,58,61,62,63,64,66,67,69,
-    71,72,73,76,77,79,80,81,83,84,85,]
-],[:gsp_industry_id])
-
-gsp_industry_id = WiNDC_notation(gsp_industry_id,:gsp_industry_id);
-
-
-bea_gsp_map = DataFrame([
-("Gross domestic product (GDP) by state","gdp"),
-("Taxes on production and imports less subsidies","taxsbd"),
-("Compensation of employees","cmp"),
-("Subsidies","sbd"),
-("Taxes on production and imports","tax"),
-("Gross operating surplus","gos"),
-("Quantity indexes for real GDP by state (2012=100.0)","qty"),
-("Real GDP by state","rgdp")],
-[:bea_code,:gdpcat])
-
-bea_gsp_map = WiNDC_notation(bea_gsp_map,:gdpcat)
-
 regions = DataFrame([
     ("Alabama", "AL", "1"),
     ("Alaska", "AK", "2"),
@@ -67,7 +44,6 @@ regions = DataFrame([
     ("Tennessee", "TN", "47"),
     ("Texas", "TX", "48"),
     ("Utah", "UT", "49"),
-    ("United States", "US", "00"),
     ("Vermont", "VT", "50"),
     ("Virginia", "VA", "51"),
     ("Washington", "WA", "53"),
@@ -76,7 +52,30 @@ regions = DataFrame([
     ("Wyoming", "WY", "56"),
 ],[:region_fullname,:region_abbv,:fips_state])
 
-states = WiNDC_notation(regions,:region_abbv)
+gsp_states = WiNDC.WiNDC_notation(regions,:region_abbv)
+
+gsp_industry_id = DataFrame([
+    [4,5,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,26,
+    27,28,29,30,31,32,33,34,35,37,38,39,40,41,42,43,44,
+    46,47,48,49,52,53,54,55,57,58,61,62,63,64,66,67,69,
+    71,72,73,76,77,79,80,81,83,84,85,]
+],[:gsp_industry_id])
+
+gsp_industry_id = WiNDC.WiNDC_notation(gsp_industry_id,:gsp_industry_id);
+
+
+bea_gsp_map = DataFrame([
+("Gross domestic product (GDP) by state","gdp"),
+("Taxes on production and imports less subsidies","taxsbd"),
+("Compensation of employees","cmp"),
+("Subsidies","sbd"),
+("Taxes on production and imports","tax"),
+("Gross operating surplus","gos"),
+("Quantity indexes for real GDP by state (2012=100.0)","qty"),
+("Real GDP by state","rgdp")],
+[:bea_code,:gdpcat])
+
+bea_gsp_map = WiNDC.WiNDC_notation(bea_gsp_map,:gdpcat)
 
 
 
@@ -155,4 +154,6 @@ bea_gsp_mapsec = DataFrame([(4, "agr"),
     [:gdp_industry_id,:i]
     )
 
-bea_gsp_mapsec = WiNDC_notation(bea_gsp_mapsec,:i)
+bea_gsp_mapsec = WiNDC.WiNDC_notation(bea_gsp_mapsec,:i)
+
+
