@@ -13,7 +13,7 @@ function load_bea_pce!(GU,data_dir,info_dict)
 
     notations = []
     push!(notations,WiNDC.notation_link(pce_map,:Description,:pce_description))
-    push!(notations,WiNDC.notation_link(states,:GeoName,:region_fullname))
+    push!(notations,WiNDC.notation_link(pce_states,:GeoName,:region_fullname))
     push!(notations,WiNDC.notation_link(pce_map_gams,:pce,:pce))
 
 

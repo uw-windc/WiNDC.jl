@@ -75,7 +75,6 @@ regions = DataFrame([
     ("Tennessee", "TN", "47"),
     ("Texas", "TX", "48"),
     ("Utah", "UT", "49"),
-    ("United States", "US", "00"),
     ("Vermont", "VT", "50"),
     ("Virginia", "VA", "51"),
     ("Washington", "WA", "53"),
@@ -84,7 +83,7 @@ regions = DataFrame([
     ("Wyoming", "WY", "56"),
 ],[:region_fullname,:region_abbv,:fips_state])
 
-states = WiNDC.WiNDC_notation(regions,:region_abbv)
+pce_states = WiNDC.WiNDC_notation(regions,:region_abbv)
 
 
 
