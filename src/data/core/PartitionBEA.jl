@@ -153,11 +153,9 @@ function _bea_apply_notations!(GU,use,supply)
         :cif0 => (:industry, :ciffob),
         :duty0 => (:industry, :Duties),
         :tax0 => (:industry, :Tax),
-        :sbd0 => (:industry, :subsidies)
+        :sbd0 => (:industry, :Subsidies)
     )
 
-
-    #return (use,supply,GU)
 
     #Use
     for parm in [:id0,:fd0,:va0,:ts0,:othtax,:x0]
@@ -170,6 +168,8 @@ function _bea_apply_notations!(GU,use,supply)
     for parm in [:ys0,:m0,:mrg0,:trn0,:cif0,:duty0,:tax0,:sbd0]
         fill_parameter!(GU, supply, parm, col_set_link, additional_filters)
     end
+
+    GU[:sbd0][:yr,:i] = - GU[:sbd0][:yr,:i]
 
     return GU
 end
@@ -209,13 +209,15 @@ function _bea_data_break!(GU)
 
     # Define parameters
 
-    GU[:id0][:yr,:i,:j] = GU[:id0][:yr,:i,:j] .- permutedims(min.(0,GU[:ys0][:yr,:j,:i]),[1,3,2])
+    
     GU[:ys0][:yr,:j,:i] = GU[:ys0][:yr,:j,:i] - min.(0,permutedims(GU[:id0][:yr,:i,:j],[1,3,2]))
 
-    GU[:ys0][:yr,:j,:i] = max.(0,GU[:ys0][:yr,:j,:i])
+
     GU[:id0][:yr,:i,:j] = max.(0,GU[:id0][:yr,:i,:j])
 
 
+    # Adjust transport margins for transport sectors according to CIF/FOB
+    # adjustments. Insurance imports are specified as net of adjustments.
     iₘ  = [e for e ∈GU[:i] if e!=:ins]
 
     GU[:trn0][:yr,iₘ] = GU[:trn0][:yr,iₘ] .+ GU[:cif0][:yr,iₘ]
@@ -246,10 +248,6 @@ function _bea_data_break!(GU)
     GU[:md0][:yr,[:trn],:i] = max.(0, GU[:trn0][:yr,:i])
 
     GU[:fs0][:yr,:i] = -min.(0, GU[:fd0][:yr,:i,[:pce]])
-
-
-
-
     GU[:y0][:yr,:i] = dropdims(sum(GU[:ys0][:yr,:j,:i],dims=2),dims=2) + GU[:fs0][:yr,:i] - dropdims(sum(GU[:ms0][:yr,:i,:m],dims=3),dims=3)
 
     GU[:a0][:yr,:i] = sum(GU[:id0][:yr,:i,:j],dims=3) + sum(GU[:fd0][:yr,:i,:fd],dims=3)
@@ -271,6 +269,8 @@ function _bea_data_break!(GU)
     ## Negative Values ##
     #####################
 
+    GU[:id0][:yr,:i,:j] = GU[:id0][:yr,:i,:j] .- permutedims(min.(0,GU[:ys0][:yr,:j,:i]),[1,3,2])
+    GU[:ys0][:yr,:j,:i] = max.(0,GU[:ys0][:yr,:j,:i])
 
     GU[:a0][:yr,:i] = max.(0, GU[:a0][:yr,:i])
     GU[:x0][:yr,:i] = max.(0, GU[:x0][:yr,:i])
@@ -285,6 +285,10 @@ function _bea_data_break!(GU)
 
     m_shr = GamsParameter(GU,(:i,))
     va_shr = GamsParameter(GU,(:va,:j))
+
+
+    deactivate(GU,:i,:use,:oth)
+    deactivate(GU,:j,:use,:oth)
 
     m_shr[:i] = transpose(sum(GU[:m0][:yr,:i],dims = 1)) ./ sum(GU[:m0][:yr,:i])
     va_shr[:va,:j] = dropdims(sum(GU[:va0][:yr,:va,:j],dims=1) ./ sum(GU[:va0][:yr,:va,:j],dims=(1,2)),dims=1)
@@ -321,6 +325,7 @@ function _bea_data_break!(GU)
     end
     
     #I disagree with this. I don't recall why, I'll figure it out.
+    #:othtax gets dropped from the set VA. 
     for yr∈GU[:yr],j∈GU[:j]
         GU[:va0][[yr],[:othtax],[j]] = 0
     end
