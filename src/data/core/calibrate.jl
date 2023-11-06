@@ -160,13 +160,28 @@ function calibrate_national_model(GU::GamsUniverse,year::Symbol)
         end
     end
 
+    # Assume zero values remain zero values for multi-dimensional parameters:
+
     _fix(ys0_,ys0,J,I)
     _fix(id0_,id0,I,J)
+    _fix(fd0_,fd0,I,FD)
+    _fix(ms0_,ms0,I,M)
     _fix(va0_,va0,VA,J)
+
+    # Fix certain parameters -- exogenous portions of final demand, value
+    # added, imports, exports and household supply.
+    
 
     fix.(fs0_[I],fs0[[year],I],force=true)
     fix.(m0_[I] ,m0[[year],I] ,force=true)
     fix.(x0_[I] ,x0[[year],I] ,force=true)
+
+    # Fix labor compensation to target NIPA table totals.
+
+    fix.(va0_[:compen,J],va0[[year],[:compen],J],force=true)
+
+
+    # No margin inputs to goods which only provide margins:
 
     fix.(md0_[M,IMRG] ,0,force=true)
     fix.(y0_[IMRG]    ,0,force=true)
@@ -175,6 +190,9 @@ function calibrate_national_model(GU::GamsUniverse,year::Symbol)
     fix.(a0_[IMRG]    ,0,force=true)
     fix.(id0_[IMRG,J] ,0,force=true)
     fix.(fd0_[IMRG,FD],0,force=true)
+
+
+
 
     @expression(m,NEWNZ,
         sum(ys0_[j,i]  for j∈J,i∈I   if ys0[[year],[j],[i]]==0      ) 
