@@ -238,7 +238,7 @@ sgf_gams_map = DataFrame([
     ("fnd", "police"),
     ("fnd", "correc"),
     ("fnd", "utlexp"),
-    ("fdn", "govadm"),
+    ("fnd", "govadm"),
     ("fen", "police"),
     ("fen", "correc"),
     ("fen", "utlexp"),
