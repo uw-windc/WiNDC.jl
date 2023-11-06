@@ -25,7 +25,8 @@ function load_usa_trade!(GU,data_dir,info_dict)
     
     df = df |>
         x -> outerjoin(x,X, on = [:r,:i,:year,:flow]) |>
-        x -> coalesce.(x,0) 
+        x -> coalesce.(x,0) #|>
+        #x -> filter(:i => i->i∉[:oth,:use],x)
     
     # Make year sums
     Y = df |>
@@ -56,18 +57,29 @@ function load_usa_trade!(GU,data_dir,info_dict)
         end
     end
     
+
+    usda = usda |>
+        x -> select(x, [:r,:year,:flow,:share]) 
+
+
     df = df |>
         x-> transform(x, 
             [:value,:value_sum,:yr_sum,:yr_r_sum] => ((v,vs,ys,yrs) -> f.(v,vs,ys,yrs))=>:value
         ) |>
         x -> select(x, [:r,:i,:year,:flow,:value]) |>
-        x -> outerjoin(x,usda, on = [:r, :year,:i,:flow],makeunique=true) |>
-        x -> coalesce.(x,0) |>
-        x -> transform(x, [:value,:value_1] => ((v,v1) -> ifelse.(v1.==0,v,v1))=>:value) |>
-        x -> select(x, [:r,:i,:year,:flow,:value]) |>
-        x -> transform(x, :flow => (y->Symbol.(y)) => :flow)
-    
-    
+        x -> unstack(x, :i,:value) |>
+        x -> outerjoin(x,usda, on = [:r, :year,:flow]) |>
+        x -> transform(x,
+            [:flow,:agr,:share] => ((f,a,s) -> ifelse.(f.=="exports",s,a)) => :agr
+            ) |>
+        x -> select(x,Not(:share)) |>
+        x ->stack(x, Not(:r,:year,:flow),variable_name=:i,value_name=:value) |>
+        x -> transform(x, 
+            :flow => (y->Symbol.(y)) => :flow,
+            :i => (y->Symbol.(y)) => :i
+            ) |>
+        x -> dropmissing(x)
+        
     
     col_set_link = Dict(
         :yr => :year, 
@@ -92,6 +104,7 @@ function load_usa_trade!(GU,data_dir,info_dict)
     
 
     return GU
+    
 
 end
 
@@ -159,16 +172,16 @@ function load_raw_usda_trade_shares(data_dir,info_dict)
 
     X = X |>
         x -> groupby(x, [:year]) |>
-        x -> combine(x, :value => sum => :r_sum) |>
+        x -> combine(x, :value => sum => :value_sum) |>
         x -> leftjoin(X,x, on = :year) |>
         x -> transform(x, 
-            [:value,:r_sum] => ((v,r) -> v./r) => :value,
+            [:value,:value_sum] => ((v,r) -> v./r) => :share,
             :region_abbv => (a -> :agr) => :i,
             :region_abbv => (a -> "exports") => :flow,
             :region_abbv => (a -> Symbol.(a)) => :r,
             :year => (a -> Symbol.(a)) => :year,
             ) |>
-        x -> select(x, [:r,:year,:i,:flow,:value])
+        x -> select(x, [:r,:year,:i,:flow,:value,:value_sum,:share])
 
     return X
 end
