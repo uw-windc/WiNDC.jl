@@ -4,28 +4,23 @@ extract_variable_ref(v::QuadExpr) = extract_variable_ref(v.aff)
 
 function generate_report(m::JuMP.Model;decimals::Int = 4)
 
-    mapping = Dict()
+    out = []
+
+    #mapping = Dict()
     for ci in all_constraints(m; include_variable_in_set_constraints = false)
         c = constraint_object(ci)
-        mapping[extract_variable_ref(c.func[2])] = c.func[1]
+
+        var = extract_variable_ref(c.func[2])
+        val = round(value(var),digits = decimals)
+        margin = round(value(c.func[1]),digits = decimals)
+
+        push!(out,(var,val,margin))
+        #mapping[extract_variable_ref(c.func[2])] = c.func[1]
     end
 
-    out = "var_name\t value\t\t margin\n"
-    for elm in all_variables(m)
+    df = DataFrame(out,[:var,:value,:margin])
+    return df
 
-        val = round(value(elm),digits = decimals)
-        margin = "."
-        try
-            margin = round(value(mapping[elm]),digits = decimals)
-        catch
-            margin = "."
-        end
-        
-
-        out = out*"$elm\t\t $val\t\t $margin\n"
-    end
-
-    return(out)
 end
 
 function verify_calibration(m::JuMP.Model)
