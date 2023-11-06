@@ -63,14 +63,14 @@ function load_faf_data!(GU,current_file_path,history_file_path)
     single_region = multi_region |>
         x -> groupby(x, [:dms_orig,:year,:i]) |>
         x -> combine(x, :value => sum => :exports) |>
-        x -> leftjoin(single_region, x, on = [:r=>:dms_orig,:year,:i])
+        x -> outerjoin(single_region, x, on = [:r=>:dms_orig,:year,:i])
 
 
-    #exports
+    #Imports
     single_region = multi_region |>
         x -> groupby(x, [:dms_dest,:year,:i]) |>
         x -> combine(x, :value => sum => :demand) |>
-        x -> leftjoin(single_region, x, on = [:r=>:dms_dest,:year,:i])
+        x -> outerjoin(single_region, x, on = [:r=>:dms_dest,:year,:i])
 
     single_region = coalesce.(single_region,0)
 
@@ -93,6 +93,14 @@ function load_faf_data!(GU,current_file_path,history_file_path)
 
     single_region[!,:value] = single_region[!,:local_supply] ./ (single_region[!,:local_supply] .+ single_region[!,:demand])
 
+    single_region = single_region |>
+    x -> select(x,[:r,:year,:i,:value]) |>
+    x -> unstack(x,:i,:value) |>
+    x -> transform(x,
+        :uti => (y -> .9) => :uti
+    ) |>
+    x -> stack(x,Not(:r,:year),variable_name = :i,value_name = :value)
+
 
     @create_parameters(GU,begin
         :rpc, (:yr,:r,:i), "Regional purchase coefficient"
@@ -108,4 +116,5 @@ function load_faf_data!(GU,current_file_path,history_file_path)
     fill_parameter!(GU, single_region, :rpc, col_set_link, Dict())
 
     return GU
+
 end
