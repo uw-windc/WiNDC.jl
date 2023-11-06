@@ -13,8 +13,10 @@ function load_bea_gsp!(GU,data_dir,gsp_info)
     df = unstack(df,:gdpcat,:value);
 
     # Region Shares
-    df[!,:gdp_calc] = df[!,:cmp] + df[!,:gos]+df[!,:taxsbd]
+    df[!,:gdp_calc] = df[!,:cmp] + df[!,:gos] + df[!,:taxsbd]
     df[!,:gdp_diff] = df[!,:gdp] - df[!,:gdp_calc];
+
+
 
     X = df[!,[:region_abbv,:year,:i,:gdp]]
     Y = groupby(X,[:year,:i])
@@ -39,6 +41,7 @@ function load_bea_gsp!(GU,data_dir,gsp_info)
 
         
 
+    models = Dict()
     for yr∈GU[:yr],s∈GU[:i]
             
         function filter_cond(year,i)
@@ -49,25 +52,41 @@ function load_bea_gsp!(GU,data_dir,gsp_info)
         klshare_k = GamsParameter(GU,(:r,))
         klshare_l_nat = GamsParameter(GU,(:r,))
         klshare_k_nat = GamsParameter(GU,(:r,))
+
         for y∈rolling_average_years(yr,8)
 
-            klshare_l[:r,[y]] = filter([:year,:i]=>(year,i) -> year==y && i==s, klshare)[:,:l]
-
+            X = filter([:year,:i]=> (year,i) -> year==y && i==s, klshare)
+            for row∈eachrow(X)
+                r = row[:region_abbv]
+                klshare_l[[r],[y]] = row[:l]
+            end
         end
 
         X = filter([:year,:i]=>filter_cond, klshare)
-        klshare_k[:r] = X[:,:k]
-        klshare_l_nat[:r] = X[:,:l_nat]
-        klshare_k_nat[:r] = X[:,:k_nat]
+        for row∈eachrow(X)
+            r = row[:region_abbv]
+            klshare_k[[r]] = row[:k]
+            klshare_l_nat[[r]] = row[:l_nat]
+            klshare_k_nat[[r]] = row[:k_nat]
+        end
 
         gspbal = GamsParameter(GU,(:r,))
-        gspbal[:r] = filter([:year,:i]=>filter_cond,df)[!,:gdp]
+        X = filter([:year,:i]=>filter_cond,df)
+        for row∈eachrow(X)
+            r = row[:region_abbv]
+            gspbal[[r]] = row[:gdp]
+        end
 
         ld0 = GU[:va0][[yr],[:compen],[s]]
         kd0 = GU[:va0][[yr],[:surplus],[s]]
 
         region_shr_ = GamsParameter(GU,(:r,))
-        region_shr_[:r] = filter([:year,:i]=>filter_cond,df)[!,:region_shr]
+        X = filter([:year,:i]=>filter_cond,df)
+        for row∈eachrow(X)
+            r = row[:region_abbv]
+            region_shr_[[r]] = row[:region_shr]
+        end
+        
 
         m = gsp_share_calibrate(GU,gspbal,region_shr_,klshare_l,ld0,kd0,klshare_k,klshare_l_nat,klshare_k_nat)
 
@@ -75,9 +94,11 @@ function load_bea_gsp!(GU,data_dir,gsp_info)
 
         optimize!(m)
 
+        models[yr,s] = m
+
         GU[:labor_shr][[yr],:r,[s]] = value.(m[:L_SHR])
     end
-    return GU
+    return (GU,models)
 end
 
 
@@ -263,7 +284,7 @@ function gsp_share_calibrate(GU,gspbal,region_shr_,klshare_l,ld0,kd0,klshare_k,k
     end
 
     @constraints(m,begin
-        shrdef[r=R],
+        shrdef[r=R; region_shr_[[r]]!=0],
             L_SHR[r] + K_SHR[r] == 1
         lshrdef,
             sum(L_SHR[r]*region_shr_[[r]]*(ld0+kd0) for r∈R) == ld0
@@ -272,13 +293,13 @@ function gsp_share_calibrate(GU,gspbal,region_shr_,klshare_l,ld0,kd0,klshare_k,k
     end)
 
     @objective(m, Min, 
-        sum(abs(gspbal[[r]]) * (L_SHR[r]/klshare_l[[r],[yr]]-1)^2 for r∈R,yr∈YR if klshare_l[[r],[yr]]!=0)
+        sum(abs(gspbal[[r]]) * (L_SHR[r]/klshare_l[[r],[yr]]-1)^2 for r∈R,yr∈YR if klshare_l[[r],[yr]]!=0 && region_shr_[[r]]!=0)
     )
 
     return m
 end
 
 function rolling_average_years(yr,numyears;min=1997,max=2021)
-    yr = parse(Int,string(Symbol(1997)))
+    yr = parse(Int,string(yr))
     return Symbol.([yr+y for y∈-Int(numyears/2):Int(numyears/2) if min<=yr+y<=max])
 end
