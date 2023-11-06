@@ -92,7 +92,7 @@ function state_dissagregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
     nd0[:r,:g] = GU[:nd0_][[year],:r,:g]
     
     hhadj = GamsParameter(GU,(:r,))
-    hhadj[:r] = GU[:hhadj_][[year],:r]
+    hhadj[:r] = GU[:hhadj0_][[year],:r]
 
 
     @variables(model,begin
@@ -233,8 +233,10 @@ function state_dissagregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
 
 
         O_MS_PM[r=R,m=M],	sum(md0[[r],[m],[gm]] for gm∈GM )
-        I_PN_MS[gm=GM,r=R,m=M],	nm0[[r],[gm],[m]]
-        I_PD_MS[r=R,gm=GM,m=M],	dm0[[r],[gm],[m]]
+        #I_PN_MS[gm=GM,r=R,m=M],	nm0[[r],[gm],[m]]
+        I_PN_MS[gm=G,r=R,m=M],	ifelse(gm∈GM, nm0[[r],[gm],[m]],0)
+        #I_PD_MS[r=R,gm=GM,m=M],	dm0[[r],[gm],[m]]
+        I_PD_MS[r=R,gm=G,m=M],	ifelse(gm∈GM, dm0[[r],[gm],[m]],0)
     end)
 
 
@@ -291,6 +293,8 @@ function state_dissagregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
         prf_C[r=R],	sum(PA[r,g]*I_PA_C[r,g] for g∈G) - PC[r]*O_C_PC[r] ⟂ C[r]
 
         
+
+
         #	Market clearance conditions: production outputs plus consumer endowments equal production inputs
         #	plus consumer demand.
 
@@ -303,7 +307,7 @@ function state_dissagregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
         #	Producer output supply and demand:
 
         mkt_PY[r=R,g=G],		sum(Y[r,s]*O_Y_PY[r,g,s] for s∈S) + E_RA_PY[r,g] - X[r,g] * I_PY_X[r,g] ⟂ PY[r,g]
-
+    
         #	Regional market for goods:
 
         mkt_PD[r=R,g=G],		X[r,g]*O_X_PD[r,g] - (A[r,g]*I_PD_A[r,g] + sum(MS[r,m]*I_PD_MS[r,g,m] for m∈M)) ⟂ PD[r,g]       #$gm[g])
