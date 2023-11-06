@@ -215,6 +215,9 @@ function _bea_data_break!(GU)
 
     GU[:id0][:yr,:i,:j] = max.(0,GU[:id0][:yr,:i,:j])
 
+    GU[:ts0][:yr,[:subsidies],:j] = -GU[:ts0][:yr,[:subsidies],:j]
+
+    
 
     # Adjust transport margins for transport sectors according to CIF/FOB
     # adjustments. Insurance imports are specified as net of adjustments.
@@ -222,6 +225,9 @@ function _bea_data_break!(GU)
 
     GU[:trn0][:yr,iₘ] = GU[:trn0][:yr,iₘ] .+ GU[:cif0][:yr,iₘ]
     GU[:m0][:yr,[:ins]] = GU[:m0][:yr,[:ins]] .+ GU[:cif0][:yr,[:ins]]
+
+
+ 
 
     # Second phase
 
@@ -250,8 +256,22 @@ function _bea_data_break!(GU)
     GU[:fs0][:yr,:i] = -min.(0, GU[:fd0][:yr,:i,[:pce]])
     GU[:y0][:yr,:i] = dropdims(sum(GU[:ys0][:yr,:j,:i],dims=2),dims=2) + GU[:fs0][:yr,:i] - dropdims(sum(GU[:ms0][:yr,:i,:m],dims=3),dims=3)
 
+
+
+
     GU[:a0][:yr,:i] = sum(GU[:id0][:yr,:i,:j],dims=3) + sum(GU[:fd0][:yr,:i,:fd],dims=3)
 
+
+    IMRG = [:mvt,:fbt,:gmt]
+
+    GU[:y0][:yr,IMRG] = 0*GU[:y0][:yr,IMRG]
+    GU[:a0][:yr,IMRG] = 0*GU[:a0][:yr,IMRG]
+    GU[:tax0][:yr,IMRG] = 0*GU[:tax0][:yr,IMRG]
+    GU[:sbd0][:yr,IMRG] = 0*GU[:sbd0][:yr,IMRG]
+    GU[:x0][:yr,IMRG] = 0*GU[:x0][:yr,IMRG]
+    GU[:m0][:yr,IMRG] = 0*GU[:m0][:yr,IMRG]
+    GU[:md0][:yr,:m,IMRG] = 0*GU[:md0][:yr,:m,IMRG]
+    GU[:duty0][:yr,IMRG] = 0*GU[:duty0][:yr,IMRG]
 
     mask = GU[:m0][:yr,:i] .>0
     GU[:tm0][mask] = GU[:duty0][mask]./GU[:m0][mask]
@@ -259,10 +279,7 @@ function _bea_data_break!(GU)
     mask = GU[:a0][:yr,:i] .!= 0
     GU[:ta0][mask] = (GU[:tax0][mask] - GU[:sbd0][mask]) ./ GU[:a0][mask]
 
-    mask = dropdims(sum(GU[:ys0][:yr,:j,:i],dims=3) .!= 0,dims=3)
-    othtax = GU[:va0][:yr,[:othtax],:i]
-    s0 = dropdims(sum(GU[:ys0][:yr,:j,:i],dims=3),dims=3)
-    GU[:ty0][mask]  = othtax[mask] ./ s0[mask]
+
 
 
     #####################
@@ -283,28 +300,26 @@ function _bea_data_break!(GU)
     #THis is stupid.
     GU[:duty0][GU[:m0].==0] = (GU[:duty0][GU[:m0].==0] .=1);
 
+
+
     m_shr = GamsParameter(GU,(:i,))
-    va_shr = GamsParameter(GU,(:va,:j))
+    va_shr = GamsParameter(GU,(:j,:va))
 
 
     deactivate(GU,:i,:use,:oth)
     deactivate(GU,:j,:use,:oth)
 
     m_shr[:i] = transpose(sum(GU[:m0][:yr,:i],dims = 1)) ./ sum(GU[:m0][:yr,:i])
-    va_shr[:va,:j] = dropdims(sum(GU[:va0][:yr,:va,:j],dims=1) ./ sum(GU[:va0][:yr,:va,:j],dims=(1,2)),dims=1)
+    va_shr[:j,:va] = permutedims(sum(GU[:va0][:yr,:va,:j],dims=1)./ sum(GU[:va0][:yr,:va,:j],dims=(1,2)),(3,2,1))
 
     for yr∈GU[:yr],i∈GU[:i]
         GU[:m0][[yr],[i]] = GU[:m0][[yr],[i]]<0 ? m_shr[[i]]*sum(GU[:m0][[yr],:]) : GU[:m0][[yr],[i]] 
     end
 
-    for year∈GU[:yr]
-        #mask = GU[:m0][[year],:i] .< 0
-        #GU[:m0][[year],mask] = m_shr[mask]*sum(GU[:m0][[year],mask])
-
-        for va∈GU[:va], j∈GU[:j]
-            GU[:va0][[year],[va],[j]] = GU[:va0][[year],[va],[j]]<0 ? va_shr[[va],[j]]*sum(GU[:va0][[year],:va,[j]]) : GU[:va0][[year],[va],[j]]
-        end
+    for year∈GU[:yr],va∈GU[:va], j∈GU[:j]
+        GU[:va0][[year],[va],[j]] = GU[:va0][[year],[va],[j]]<0 ? va_shr[[j],[va]]*sum(GU[:va0][[year],:va,[j]]) : GU[:va0][[year],[va],[j]]
     end
+
 
     # Non-tracked marginal categories.
 
@@ -323,9 +338,9 @@ function _bea_data_break!(GU)
             GU[:md0][[yr],[m],[i]] = 0
         end
     end
-    
-    #I disagree with this. I don't recall why, I'll figure it out.
-    #:othtax gets dropped from the set VA. 
+
+    GU[:ty0][:yr,:j] = GU[:othtax][:yr,:j] ./ sum(GU[:ys0][:yr,:j,:i],dims=3)
+
     for yr∈GU[:yr],j∈GU[:j]
         GU[:va0][[yr],[:othtax],[j]] = 0
     end
