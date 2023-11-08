@@ -14,7 +14,7 @@ using JSON
 
 export generate_report
 
-export national_model_mcp,  state_dissagregation_model_mcp_year
+export national_model_mcp,  state_disaggregation_model_mcp_year
 
 
 #load_bea_data_api, load_bea_data_local, verify_calibration,

@@ -1,6 +1,9 @@
+"""
+    state_disaggregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
 
-
-function state_dissagregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
+Return the model for the state-level disaggreation for a single year.
+"""
+function state_disaggregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
 
     model = Model(PATHSolver.Optimizer)
 
