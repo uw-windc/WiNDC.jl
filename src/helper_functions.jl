@@ -23,9 +23,6 @@ function generate_report(m::JuMP.Model)
 
 end
 
-function verify_calibration(m::JuMP.Model)
-    sum([abs(a) for (a,b) in value.(all_constraints(m; include_variable_in_set_constraints = false))])
-end
 
 function apply_notations(df, notations)
     for notation in notations
