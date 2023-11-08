@@ -1,14 +1,11 @@
 #include("./bea_api/bea_api.jl")
 include("./calibrate.jl")
-include("./sets/sets.jl")
-include("./bea_io/data_defines.jl")
+include("./data_defines.jl")
 
 
 
-function _bea_io_initialize_universe(years = 1997:2021)
+function _bea_io_initialize_universe!(GU)
 
-    GU = GamsUniverse()
-    initialize_sets!(GU,years)
 
     @create_parameters(GU,begin
         #Use
@@ -38,7 +35,7 @@ end
 
 
 """
-    load_bea_data_api(api_key::String; years = 1997:2021)
+    load_bea_data_api(GU::GamsUniverse,api_key::String)
 
 Load the the BEA data using the BEA API. 
 
@@ -48,9 +45,9 @@ to obtain an key.
 Currently (Septerber 28, 2023) this will only return years 2017-2022 due
 to the BEA restricting the API. 
 """
-function load_bea_data_api(api_key::String; years = 1997:2021)
+function load_bea_data_api(GU::GamsUniverse,api_key::String)
 
-    GU = _bea_io_initialize_universe(years)
+    _bea_io_initialize_universe!(GU)
 
     load_supply_use_api!(GU,api_key)
 
@@ -63,9 +60,10 @@ function load_bea_data_api(api_key::String; years = 1997:2021)
 end
 
 """
-    load_bea_data_local(use_path::String,
-                        supply_path::String;
-                        years = 1997:2021)
+    load_bea_io!(GU::GamsUniverse,
+                 data_dir::String,
+                 info_dict
+                 )
 
 Load the BEA data from a local XLSX file. This data is available
 [at the WiNDC webpage](https://windc.wisc.edu/downloads.html). The use table is
@@ -76,19 +74,26 @@ and the supply table is
 
     windc_2021/BEA/IO/Supply_Tables_1997-2021_SUM.xlsx
 """
-function load_bea_data_local(use_path::String,
-                             supply_path::String;
-                             years = 1997:2021)
+function load_bea_io!(GU::GamsUniverse,
+                     data_dir::String,
+                     info_dict
+                     )
 
-    GU = _bea_io_initialize_universe(years)
+    _bea_io_initialize_universe!(GU)
 
-     load_supply_use_local!(GU,use_path,supply_path)
+    use_path = joinpath(data_dir,info_dict["use"])
+    use = _load_table_local(use_path)
 
-     _bea_data_break!(GU)
+    supply_path = joinpath(data_dir,info_dict["supply"])
+    supply = _load_table_local(supply_path)
 
-     calibrate_national!(GU)
+    _bea_apply_notations!(GU,use,supply)
 
-     return GU
+    _bea_data_break!(GU)
+
+    calibrate_national!(GU)
+
+    return GU
 
 
 end
@@ -105,16 +110,7 @@ function load_supply_use_api!(GU,api_key::String)
 end
 
 
-function load_supply_use_local!(GU::GamsUniverse,use_path::String,supply_path::String)
 
-    use = _load_table_local(use_path)
-    supply = _load_table_local(supply_path)
-
-
-    _bea_apply_notations!(GU,use,supply)
-    return GU  
-
-end
 
 function _bea_apply_notations!(GU,use,supply)
 
