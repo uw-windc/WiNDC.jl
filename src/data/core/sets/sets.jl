@@ -1,5 +1,14 @@
 
 
+function initialize_sets(years = 1997:2021)
+
+	GU = GamsUniverse()
+
+	initialize_sets!(GU,years)
+
+    return GU
+end
+
 function initialize_sets!(GU, years = 1997:2021)
 
     margins!(GU)
