@@ -29,7 +29,9 @@ function load_raw_faf_data(file_path)
 end
 
 
-function load_faf_data!(GU,current_file_path,history_file_path)
+function load_faf_data!(GU,data_dir,info_dict)
+    current_file_path = joinpath(data_dir,info_dict["current"])
+    history_file_path = joinpath(data_dir,info_dict["history"])
 
     df_cur = load_raw_faf_data(current_file_path)
     df_hist = load_raw_faf_data(history_file_path)

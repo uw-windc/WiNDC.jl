@@ -141,18 +141,25 @@ end
 
 function load_raw_bea_gsp(data_dir,years,gsp_data)
 
-    column_rename_dict = Dict{Symbol,Symbol}()
-    for (a,b) ∈ gsp_data["columns"]
-        column_rename_dict[Symbol(a)] = Symbol(b)
-    end
+    column_rename_dict = Dict(
+                            :GeoFIPS=> :GeoFIPS,
+                            :GeoName=> :state,
+                            :Region=> :region,
+                            :TableName=> :TableName,
+                            :IndustryId=> :IndustryId,
+                            :IndustryClassification=> :IndustryClassification,
+                            :Description=> :Description,
+                            :Unit=> :units,
+                            :year=> :year,
+                            :value=> :value,
+                            :ComponentName=> :ComponentName
+                    )
 
     df = DataFrame()
 
-    for (a,gsp_info) ∈ gsp_data["data"]
-        if a == "sagdp11n"
-            continue
-        end
-        df1 = load_bea_gsp_file("$data_dir\\$(gsp_info["path"])",
+    for (a,gsp_info) ∈ gsp_data
+
+        df1 = load_bea_gsp_file(joinpath(data_dir,gsp_info["path"]),
                                 years,
                                 gsp_info["nrows"],
                                 gsp_info["ComponenentName"],

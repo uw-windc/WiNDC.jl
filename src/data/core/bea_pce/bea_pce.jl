@@ -1,9 +1,11 @@
 include("./data_defines.jl")
 
 function load_bea_pce!(GU,data_dir,info_dict)
+    
+    info = info_dict["saexp1"]
 
-    data_path = "$data_dir\\$(info_dict["path"])"
-    nrows = info_dict["nrows"]
+    data_path = "$data_dir\\$(info["path"])"
+    nrows = info["nrows"]
     df = DataFrame(CSV.File(data_path;limit = nrows,stringtype=String));
     
     df = select(df, Not([:Unit,:IndustryClassification,:GeoFIPS,:Region,:TableName,:LineCode]));

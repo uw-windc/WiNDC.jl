@@ -7,8 +7,7 @@ function load_usa_trade!(GU,data_dir,info_dict)
 
     df = load_raw_usa_trade(data_dir,info_dict)
 
-    id = Dict("path" => raw"\USATradeOnline\commodity_detail_by_state_cy.xlsx")
-    usda = load_raw_usda_trade_shares(data_dir,id)
+    usda = load_raw_usda_trade_shares(data_dir,info_dict)
     
     function mean(x)
         sum(x)/length(x)
@@ -101,6 +100,23 @@ function load_usa_trade!(GU,data_dir,info_dict)
     fill_parameter!(GU, df, :usatrd_shr, col_set_link, Dict())
 
 
+    # Relate years of data to available trade shares
+    
+    ag_years = Symbol.(1997:2000)
+
+
+    years = Symbol.(1997:2001)
+    s = [e for e in GU[:i] if e!=:agr]
+
+    for year in years
+        GU[:usatrd_shr][[year],:r,s,[:exports]] = GU[:usatrd_shr][[Symbol(2002)],:r,s,[:exports]]
+        GU[:usatrd_shr][[year],:r,:i,[:imports]] = GU[:usatrd_shr][[Symbol(2002)],:r,:i,[:imports]]
+    end
+
+    for year in ag_years
+        GU[:usatrd_shr][[year],:r,[:agr],[:exports]] = GU[:usatrd_shr][[Symbol(2000)],:r,[:agr],[:exports]]
+    end
+
     
 
     return GU
@@ -122,12 +138,13 @@ function load_raw_usa_trade(data_dir, info_dict)
     push!(notations, WiNDC.notation_link(usatrd_states,:State,:region_fullname));
     push!(notations, WiNDC.notation_link(naics_map,:naics,:naics));    
 
-    for (flow,dict) in info_dict
+    for flow in ["exports","imports"]
+        dict = info_dict[flow]
         file_path = dict["path"]
 
         col_rename = dict["col_rename"]
 
-        df = DataFrame(CSV.File("$data_dir/$file_path",header=4,select=1:5,stringtype=String,silencewarnings=true)) |>
+        df = DataFrame(CSV.File(joinpath(data_dir,file_path),header=4,select=1:5,stringtype=String,silencewarnings=true)) |>
             x -> rename(x, col_rename => "value") |>
             x -> filter(:Time => y-> !occursin("through",y), x) |>
             x -> filter(:Country => y-> y=="World Total", x) |>
@@ -154,13 +171,13 @@ end
 
 
 function load_raw_usda_trade_shares(data_dir,info_dict)
-    file_path = info_dict["path"]
-    #C:\Users\mphillipson\Documents\WiNDC\windc_raw_data\windc_2021\USATradeOnline\commodity_detail_by_state_cy.xlsx
+    file_path = info_dict["detail"]
+    
     notations = []
 
     push!(notations, WiNDC.notation_link(usatrd_states,:State,:region_fullname));
 
-    X = XLSX.readdata("$data_dir/$file_path","Total exports","A3:W55")
+    X = XLSX.readdata(joinpath(data_dir,file_path),"Total exports","A3:W55")
     X[1,1] = "State"
     X = DataFrame(X[4:end,:], X[1,:]) |>
         x -> apply_notations(x,notations) |>

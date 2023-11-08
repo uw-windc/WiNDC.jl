@@ -25,8 +25,8 @@ function sgf_parse_line_1999(s)
 end
 
 
-function sgf_load_clean_year(year,data_dir,year_info)
-    data_path = "$data_dir\\$(year_info["path"])"
+function sgf_load_clean_year(year,data_dir,path)
+    data_path = joinpath(data_dir,path)
 
     s = open(data_path) do f
         s = read(f,String)
@@ -74,8 +74,8 @@ function load_sgf_data!(GU,data_dir,info_dict)
     end)
 
     df = DataFrame()
-    for (year,year_info) in info_dict["data"]
-        small_df = sgf_load_clean_year(year,data_dir,year_info)
+    for (year,path) in info_dict
+        small_df = sgf_load_clean_year(year,data_dir,path)
         df = vcat(df,small_df)
     end
 
