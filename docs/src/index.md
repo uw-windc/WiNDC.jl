@@ -31,7 +31,7 @@ GU = WiNDC.load_state_data(data_dir)
 
 year = Symbol(2017)
 
-m = state_dissagregation_model_mcp_year(GU,year)
+m = state_disaggregation_model_mcp_year(GU,year)
 
 # Fix an income level to normalize prices in the MCP model 
 fix(m[:RA][:CA],GU[:c0_][[year],[:CA]],force=true)
@@ -53,4 +53,5 @@ will be available in early 2024.
 
 ```@docs
 national_model_mcp(GU::GamsUniverse;solver = PATHSolver.Optimizer)
+state_disaggregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
 ```
