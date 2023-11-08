@@ -2,7 +2,8 @@
 
 ## Sets
 
-<center>
+
+<div align="center">
 
 |Set Name|Description|
 |---|---|
@@ -12,11 +13,11 @@
 |[m](#margins-trade-or-transport)|Margins (trade or transport)|
 |[gm](#bea-goods-and-sectors-categories--commodities-employed-in-margin-supply)|Commodities employed in margin supply|
 
-</center>
+</div>
 
 ## Parameters
 
-<center>
+
 
 |Parameter Name|Domain|Description|
 |---|---|---|
@@ -49,7 +50,7 @@
 |dm0_|yr, r, g, m|Margin supply from the local market|
 |gdp0_|yr, r|Aggregate GDP|
 
-</center>
+
 
 
 
@@ -57,7 +58,7 @@
 # Set Listing
 
 ## Years in WiNDC Database
-<center>
+
 
 |yr| |yr|
 |---|---|---|
@@ -73,44 +74,44 @@
 |2006| |2017|
 |2007|||
 
-</center>
+
 
 ## Regions in WiNDC Database
-<center>
 
-|r|Description| |r|Description|
-|---|---|---|---|--|
-|AK|Alaska| |MT|Montana|
-|AL|Alabama| |NC|North Carolina|
-|AR|Arkansas| |ND|North Dakota|
-|AZ|Arizona| |NE|Nebraska|
-|CA|California| |NH|New Hampshire|
-|CO|Colorado| |NJ|New Jersey|
-|CT|Connecticut| |NM|New Mexico|
-|DC|District of Columbia| |NV|Nevada|
-|DE|Delaware| |NY|New York|
-|FL|Florida| |OH|Ohio|
-|GA|Georgia| |OK|Oklahoma|
-|HI|Hawaii| |OR|Oregon|
-|IA|Iowa| |PA|Pennsylvania|
-|ID|Idaho| |RI|Rhode Island|
-|IL|Illinois| |SC|South Carolina|
-|IN|Indiana| |SD|South Dakota|
-|KS|Kansas| |TN|Tennessee|
-|KY|Kentucky| |TX|Texas|
-|LA|Louisiana| |UT|Utah|
-|MA|Massachusetts| |VA|Virginia|
-|MD|Maryland| |VT|Vermont|
-|ME|Maine| |WA|Washington|
-|MI|Michigan| |WI|Wisconsin|
-|MN|Minnesota| |WV|West Virginia|
-|MO|Missouri| |WY|Wyoming|
-|MS|Mississippi||||
 
-</center>
+|r  |Description        |   |r  |Description|
+|---|---                |---|---|---|
+|AK |Alaska             |   |MT |Montana|
+|AL |Alabama            |   |NC |North Carolina|
+|AR |Arkansas           |   |ND |North Dakota|
+|AZ |Arizona            |   |NE |Nebraska|
+|CA |California         |   |NH |New Hampshire|
+|CO |Colorado           |   |NJ |New Jersey|
+|CT |Connecticut        |   |NM |New Mexico|
+|DC |District of Columbia|  |NV |Nevada|
+|DE |Delaware           |   |NY |New York|
+|FL |Florida            |   |OH |Ohio|
+|GA |Georgia            |   |OK |Oklahoma|
+|HI |Hawaii             |   |OR |Oregon|
+|IA |Iowa               |   |PA |Pennsylvania|
+|ID |Idaho              |   |RI |Rhode Island|
+|IL |Illinois           |   |SC |South Carolina|
+|IN |Indiana            |   |SD |South Dakota|
+|KS |Kansas             |   |TN |Tennessee|
+|KY |Kentucky           |   |TX |Texas|
+|LA |Louisiana          |   |UT |Utah|
+|MA |Massachusetts      |   |VA |Virginia|
+|MD |Maryland           |   |VT |Vermont|
+|ME |Maine              |   |WA |Washington|
+|MI |Michigan           |   |WI |Wisconsin|
+|MN |Minnesota          |   |WV |West Virginia|
+|MO |Missouri           |   |WY |Wyoming|
+|MS |Mississippi        |   |   ||
+
+
 
 ## BEA Goods and sectors categories & Commodities employed in margin supply
-<center>
+
 
 | s, g   | gm   | Description                                                                           |
 |:------|:-----:|:--------------------------------------------------------------------------------------|
@@ -187,14 +188,14 @@
 | slg   | -    | State and local general government (GSLG)                                             |
 | sle   | -    | State and local government enterprises (GSLE)                                         |
 
-</center>
+
 
 ## Margins (trade or transport)
-<center>
+
 
 | m   | Description   |
 |:------|:--------------|
 | trn   | transport     |
 | trd   | trade         |
 
-</center>
+
