@@ -1,4 +1,27 @@
 """
+    state_disaggregation_model_mcp(GU::GamsUniverse)
+
+Run all years of the the state-level model. Returns a dictionary containing
+each year.
+"""
+function state_disaggregation_model_mcp(GU::GamsUniverse)
+
+    models = Dict()
+
+    for year∈GU[:yr]
+        m = state_disaggregation_model_mcp_year(GU,year)
+        set_silent(m)
+        optimize!(m)
+        models[parse(Int,string(year))] = m
+
+    end
+
+    return models
+
+end
+
+
+"""
     state_disaggregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
 
 Return the model for the state-level disaggreation for a single year.
