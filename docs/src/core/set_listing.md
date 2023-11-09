@@ -5,11 +5,11 @@
 
 |Set Name|Description|
 |---|---|
-|[yr](#years-in-windc-database)|Years in WiNDC Database|
-|[r](#regions-in-windc-database)|Regions in WiNDC Database|
-|[s, g](#bea-goods-and-sectors-categories--commodities-employed-in-margin-supply) |BEA Goods and sectors categories|
-|[m](#margins-trade-or-transport)|Margins (trade or transport)|
-|[gm](#bea-goods-and-sectors-categories--commodities-employed-in-margin-supply)|Commodities employed in margin supply|
+|[yr](@ref core_years)|Years in WiNDC Database|
+|[r](@ref core_regions)|Regions in WiNDC Database|
+|[s, g](@ref core_sectors) |BEA Goods and sectors categories|
+|[m](@ref core_margins)|Margins (trade or transport)|
+|[gm](@ref core_sectors)|Commodities employed in margin supply|
 
 
 ## Parameters
@@ -54,7 +54,7 @@
 
 # Set Listing
 
-## Years in WiNDC Database
+## [Years in WiNDC Database](@id core_years)
 
 
 |yr| |yr|
@@ -73,7 +73,7 @@
 
 
 
-## Regions in WiNDC Database
+## [Regions in WiNDC Database](@id core_regions)
 
 
 |r  |Description        |   |r  |Description|
@@ -107,7 +107,7 @@
 
 
 
-## BEA Goods and sectors categories & Commodities employed in margin supply
+## [BEA Goods and sectors categories & Commodities employed in margin supply](@id core_sectors)
 
 
 | s, g   | gm   | Description                                                                           |
@@ -187,7 +187,7 @@
 
 
 
-## Margins (trade or transport)
+## [Margins (trade or transport)](@id core_margins)
 
 
 | m   | Description   |
