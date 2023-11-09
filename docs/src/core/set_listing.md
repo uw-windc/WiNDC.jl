@@ -3,8 +3,6 @@
 ## Sets
 
 
-<div align="center">
-
 |Set Name|Description|
 |---|---|
 |[yr](#years-in-windc-database)|Years in WiNDC Database|
@@ -13,7 +11,6 @@
 |[m](#margins-trade-or-transport)|Margins (trade or transport)|
 |[gm](#bea-goods-and-sectors-categories--commodities-employed-in-margin-supply)|Commodities employed in margin supply|
 
-</div>
 
 ## Parameters
 

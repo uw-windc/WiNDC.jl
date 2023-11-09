@@ -4,8 +4,9 @@ using Documenter, WiNDC, GamsStructure, PATHSolver
 
 const _PAGES = [
     "Introduction" => ["index.md"],
-    "Core Module" => ["core/set_listing.md"]
-
+    "Data" => ["data/core.md"],
+    "Core Module" => ["core/overview.md","core/set_listing.md"]
+    
 ]
 
 
