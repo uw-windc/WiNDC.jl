@@ -87,7 +87,7 @@ function state_disaggregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
 
     tm = deepcopy(tm0)
 
-    tm[:r,:g] = tm[:r,:g]*0 #Shock, set tariffs to zero
+    tm[:r,:g] = tm[:r,:g]#*0 #Shock, set tariffs to zero
     
     cd0 = GamsParameter(GU,(:r,:g))
     cd0[:r,:g] = GU[:cd0_][[year],:r,:g]
