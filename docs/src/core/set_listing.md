@@ -1,4 +1,4 @@
-# State Level Disaggregation
+# [State Level Disaggregation](@id core_state_disaggregation)
 
 ## Sets
 
@@ -59,17 +59,19 @@
 
 |yr| |yr|
 |---|---|---|
-|1997| |2008|
-|1998| |2009|
-|1999| |2010|
-|2000| |2011|
-|2001| |2012|
-|2002| |2013|
-|2003| |2014|
-|2004| |2015|
-|2005| |2016|
-|2006| |2017|
-|2007|||
+|1997| |2010|
+|1998| |2011|
+|1999| |2011|
+|2000| |2012|
+|2001| |2013|
+|2002| |2014|
+|2003| |2015|
+|2004| |2016|
+|2005| |2017|
+|2006| |2018|
+|2007| |2019|
+|2008| |2020| 
+|2009| |2021|
 
 
 
@@ -178,7 +180,6 @@
 | amd   | -    | Accommodation (721)                                                                   |
 | res   | -    | Food services and drinking places (722)                                               |
 | osv   | -    | Other services, except government (81)                                                |
-| nan   | -    | nan                                                                                   |
 | fdd   | -    | Federal general government (defense) (GFGD)                                           |
 | fnd   | -    | Federal general government (nondefense) (GFGN)                                        |
 | fen   | -    | Federal government enterprises (GFE)                                                  |
