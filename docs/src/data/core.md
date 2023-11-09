@@ -49,5 +49,5 @@ selecting data, we want every state (this is different that All States), the mos
 disaggregated commodities (third level), and for `Exports` we want `World Total`
 and `Imports` we want both `World Total` and `Canada` in the Countries column.
 
-There is one more file we use, [Commodity_detail_by_state_cy.xlsx](https://www.ers.usda.gov/webdocs/DataFiles/100812/)
+There is one more file we use, [Commodity\_detail\_by\_state\_cy.xlsx](https://www.ers.usda.gov/webdocs/DataFiles/100812/)
 This is probably a fragile link.

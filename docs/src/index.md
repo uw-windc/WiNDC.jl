@@ -7,7 +7,6 @@ Currently the entire Core module is implemented. This includes:
 * The state-level disaggregation. 
 
 
-https://windc.wisc.edu/downloads/version_4_0/windc_2021_julia.zip
 # Example
 This data is hosted on the [WiNDC website](https://windc.wisc.edu/downloads/version_4_0/windc_2021_julia.zip). 
 You must download and extract this data. The exact path will be used
