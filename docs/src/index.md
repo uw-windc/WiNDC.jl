@@ -50,10 +50,3 @@ optimize!(m)
 The API version is under development. It is being worked on and
 will be available in early 2024.
 
-
-# Function Listing
-
-```@docs
-national_model_mcp(GU::GamsUniverse;solver = PATHSolver.Optimizer)
-state_disaggregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
-```
