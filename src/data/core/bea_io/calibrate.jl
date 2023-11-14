@@ -109,7 +109,7 @@ function calibrate_national_model(GU::GamsUniverse,year::Symbol)
     upb = 10 #upper bound ratio
     newnzpenalty = 1e3
 
-    m = Model(Ipopt.Optimizer)
+    m = JuMP.Model(Ipopt.Optimizer)
 
 
     @variables(m,begin

@@ -273,7 +273,7 @@ end
 
 function gsp_share_calibrate(GU,gspbal,region_shr_,klshare_l,ld0,kd0,klshare_k,klshare_l_nat,klshare_k_nat)
 
-    m = Model(Ipopt.Optimizer)
+    m = JuMP.Model(Ipopt.Optimizer)
 
     R = [r for r∈GU[:r]]
     YR = [yr for yr∈GU[:yr]]

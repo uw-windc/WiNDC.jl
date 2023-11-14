@@ -28,7 +28,7 @@ Return the model for the state-level disaggreation for a single year.
 """
 function state_disaggregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
 
-    model = Model(PATHSolver.Optimizer)
+    model = JuMP.Model(PATHSolver.Optimizer)
 
     R = [r for r∈GU[:r]]
     S = [s for s∈GU[:s]]
