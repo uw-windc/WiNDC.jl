@@ -24,6 +24,8 @@ export load_national_data,load_state_data
 include("helper_functions.jl")
 include("data/notations.jl")
 
+
+
 include("data/core/bea_api/bea_api.jl")
 
 #Models
@@ -31,6 +33,7 @@ include("core/nationalmodel.jl")
 include("core/state_disaggregation_model.jl")
 
 #Data
+include("data/core/core_data_defines.jl")
 include("data/core/bea_io/PartitionBEA.jl")
 include("data/core/bea_gsp/bea_gsp.jl")
 include("data/core/bea_pce/bea_pce.jl")
