@@ -65,7 +65,7 @@ function apply_notation(df, notation)
         cols = [dirty_match]
     end
 
-    df = innerjoin(data[!,cols],df,on = dirty_match => dirty)
+    df = innerjoin(data[!,cols],df,on = dirty_match => dirty, matchmissing=:notequal)
 
     if dirty_match != clean
         select!(df,Not(dirty_match))
