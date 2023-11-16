@@ -1,4 +1,4 @@
-include("./data_defines.jl")
+#include("./data_defines.jl")
 
 function load_raw_faf_data(file_path)
 
@@ -14,13 +14,12 @@ function load_raw_faf_data(file_path)
                     Not(["dms_origst","dms_destst","dms_mode","sctg2"]),
                     value_name = :value, 
                     variable_name = :year
-                    )
-
-    df[!,:year] = df[!,:year] |>
-        x -> replace.(x, "value_"=>"") |>
-        x -> parse.(Int, x)
-
-    df = df |>
+                    ) |>
+        x -> transform(x,
+            :dms_origst => (y -> string.(y)) => :dms_origst,
+            :dms_destst => (y -> string.(y)) => :dms_destst,
+            :year => (y -> replace.(y,"value_" => "")) => :year
+        ) |> 
         x -> groupby(x, [:dms_origst,:dms_destst,:sctg2,:year]) |>
         x -> combine(x, :value=>sum=>:value)
 
@@ -36,20 +35,19 @@ function load_faf_data!(GU,data_dir,info_dict)
     df_cur = load_raw_faf_data(current_file_path)
     df_hist = load_raw_faf_data(history_file_path)
 
-    df = filter(:year => x-> x<=2021, vcat(df_cur,df_hist))
+    
 
-    notations = []
+    #notations = []
 
-    push!(notations,WiNDC.notation_link(orig,:dms_origst,:state_fips))
-    push!(notations,WiNDC.notation_link(dest,:dms_destst,:state_fips))
-    push!(notations,WiNDC.notation_link(sctg2,:sctg2,:sctg2))
-    push!(notations,WiNDC.notation_link(years,:year,:faf_year))
+    #push!(notations,WiNDC.notation_link(orig,:dms_origst,:state_fips))
+    #push!(notations,WiNDC.notation_link(dest,:dms_destst,:state_fips))
+    #push!(notations,WiNDC.notation_link(sctg2,:sctg2,:sctg2))
+    #push!(notations,WiNDC.notation_link(years,:year,:faf_year))
 
-    for notation in notations
-        df = WiNDC.apply_notation!(df,notation)
-    end
+    notations = faf_notations()
 
-    df = df |> 
+    df = vcat(df_cur,df_hist) |>
+        x -> apply_notations(x,notations) |>
         x -> groupby(x,[:dms_dest,:dms_orig,:year,:i]) |>
         x -> combine(x, :value => sum => :value)
 
@@ -89,19 +87,23 @@ function load_faf_data!(GU,data_dir,info_dict)
                     )
 
     # Make a dataframe with all the goods not present in the FAF data
-    X = DataFrame([[i for i∈GU[:i] if i∉ Symbol.(unique(single_region[!,:i]))]],[:i])
+    X = Symbol.(unique(single_region[!,:i])) |>
+        x -> [i for i∈GU[:i] if i∉ x] |>
+        x -> DataFrame([x],[:i])
+
+    #X = DataFrame([[i for i∈GU[:i] if i∉ Symbol.(unique(single_region[!,:i]))]],[:i])
 
     single_region = vcat(single_region,crossjoin(X,Y));
 
     single_region[!,:value] = single_region[!,:local_supply] ./ (single_region[!,:local_supply] .+ single_region[!,:demand])
 
     single_region = single_region |>
-    x -> select(x,[:r,:year,:i,:value]) |>
-    x -> unstack(x,:i,:value) |>
-    x -> transform(x,
-        :uti => (y -> .9) => :uti
-    ) |>
-    x -> stack(x,Not(:r,:year),variable_name = :i,value_name = :value)
+        x -> select(x,[:r,:year,:i,:value]) |>
+        x -> unstack(x,:i,:value) |>
+        x -> transform(x,
+            :uti => (y -> .9) => :uti
+        ) |>
+        x -> stack(x,Not(:r,:year),variable_name = :i,value_name = :value)
 
 
     @create_parameters(GU,begin

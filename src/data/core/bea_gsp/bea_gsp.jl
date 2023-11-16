@@ -1,4 +1,4 @@
-include("./data_defines.jl")
+#include("./data_defines.jl")
 
 function load_bea_gsp!(GU,data_dir,gsp_info)
 
@@ -172,23 +172,17 @@ function load_raw_bea_gsp(data_dir,years,gsp_data)
 end
 
 function clean_raw_bea_gsp(df)
-    notations = []
+    #notations = []
 
-    push!(notations,notation_link(gsp_states,:state,:region_fullname))
-    push!(notations,notation_link(gsp_industry_id,:IndustryID,:gsp_industry_id))
-    push!(notations,notation_link(bea_gsp_map,:ComponentName,:bea_code))
-    push!(notations,notation_link(bea_gsp_mapsec,:gsp_industry_id,:gdp_industry_id))
+    #push!(notations,notation_link(gsp_states,:state,:region_fullname))
+    ##push!(notations,notation_link(gsp_industry_id,:IndustryID,:gsp_industry_id))
+    #push!(notations,notation_link(bea_gsp_mapsec,:IndustryID,:gdp_industry_id))
+    #push!(notations,notation_link(bea_gsp_map,:ComponentName,:bea_code))
+
+    notations = bea_gsp_notations()
+    df = apply_notations(df,notations)
 
 
-    #df = load_raw_bea_gsp(data_dir,1997:2021,info_dict)
-
-    #return df
-
-    for notation in notations
-        df = apply_notation!(df,notation)
-    end
-
- 
 
     df = df[!,[:region_abbv,:year,:gdpcat,:i,:units,:value]]
 
