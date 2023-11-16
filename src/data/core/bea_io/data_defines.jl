@@ -118,12 +118,13 @@ function bea_io_notations()
             ("SUB", "Subsidies", "Subsidies"),
             ("T015", "TaxLesSubsidies", "TaxLesSubsidies"),
             ("T016", "Supply", "Supply")
-        ], [:bea_code,:commodity,:industry])
+        ], [:naics_code,:i,:industry])
 
-    bea_industry = WiNDC_notation(bea_code,:industry);
-    bea_commodity = WiNDC_notation(bea_code,:commodity);
+#    bea_industry = WiNDC_notation(bea_code,:industry);
+#    bea_commodity = WiNDC_notation(bea_code,:commodity);
 
     notations = []
-    push!(notations,notation_link(bea_commodity,:RowCode,:bea_code))
-    push!(notations,notation_link(bea_industry,:ColCode,:bea_code))
+    push!(notations,notation_link(:RowCode,bea_code,:naics_code,:i,:commodity))#,:RowCode,:bea_code))
+    push!(notations,notation_link(:ColCode,bea_code,:naics_code,:i,:industry))
+
 end
