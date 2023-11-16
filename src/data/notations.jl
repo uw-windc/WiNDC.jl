@@ -42,9 +42,7 @@ dirty_to_match -> The column in the replacement dataframe that matches the dirty
     column in the input data.
 clean_column -> The column in the replacement dataframe with the correct output
 clean_name -> The final name that should appear in the output dataframe.
-
 """
-
 struct notation_link
     dirty_to_replace::Symbol
     data::DataFrame
