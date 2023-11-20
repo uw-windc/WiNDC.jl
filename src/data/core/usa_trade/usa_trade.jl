@@ -1,4 +1,4 @@
-include("./data_defines.jl")
+#include("./data_defines.jl")
 
 
 function load_usa_trade!(GU,data_dir,info_dict)
@@ -133,10 +133,12 @@ end
 function load_raw_usa_trade(data_dir, info_dict)
 
     out = DataFrame()
-    notations = []
 
-    push!(notations, WiNDC.notation_link(usatrd_states,:State,:region_fullname));
-    push!(notations, WiNDC.notation_link(naics_map,:naics,:naics));    
+    notations = usatrd_notations()
+    #notations = []
+
+    #push!(notations, WiNDC.notation_link(usatrd_states,:State,:region_fullname));
+    #push!(notations, WiNDC.notation_link(naics_map,:naics,:naics));    
 
     for flow in ["exports","imports"]
         dict = info_dict[flow]
@@ -173,9 +175,11 @@ end
 function load_raw_usda_trade_shares(data_dir,info_dict)
     file_path = info_dict["detail"]
     
-    notations = []
+    #notations = []
 
-    push!(notations, WiNDC.notation_link(usatrd_states,:State,:region_fullname));
+    #push!(notations, WiNDC.notation_link(usatrd_states,:State,:region_fullname));
+
+    notations = usatrd_shares_notations()
 
     X = XLSX.readdata(joinpath(data_dir,file_path),"Total exports","A3:W55")
     X[1,1] = "State"

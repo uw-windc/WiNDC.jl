@@ -23,10 +23,3 @@ function generate_report(m::JuMP.Model)
 
 end
 
-
-function apply_notations(df, notations)
-    for notation in notations
-        df = WiNDC.apply_notation!(df,notation)
-    end
-    return df
-end

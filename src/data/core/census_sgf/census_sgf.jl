@@ -1,4 +1,4 @@
-include("./data_defines.jl")
+#include("./data_defines.jl")
 
 
 
@@ -38,30 +38,43 @@ function sgf_load_clean_year(year,data_dir,path)
         f = sgf_parse_line
     end
 
+    notations = sgf_notations()
+    #notations = []
+
+    #push!(notations,WiNDC.notation_link(sgf_state_codes,:government_code,:code))
+    #push!(notations,WiNDC.notation_link(sgf_states, :state, :region_fullname))
+    #push!(notations,WiNDC.notation_link(item_codes, :item_code,:item_code));
+    #push!(notations,WiNDC.notation_link(sgf_map, :item_name,:sgf_category));
+    #push!(notations,WiNDC.notation_link(sgf_gams_map, :i,:sgf_category));
+
+
     L = f.([e for e in split(s,'\n') if e!=""])
-    df = DataFrame(L)
+    df = DataFrame(L) |>
+        x -> apply_notations(x,notations) |>
+        x -> transform(x,
+            :amount => (y -> parse.(Int,y)) => :amount
+            ) |>
+        x -> groupby(x,[:i,:region_abbv]) |>
+        x -> combine(x, :amount => sum) |>
+        x -> transform(x,
+            :amount_sum => (y -> Symbol(year)) => :year,
+            :amount_sum => (a -> a./1_000) => :value,
+            :i => (i -> Symbol.(i)) => :i,
+            :region_abbv => (r -> Symbol.(r)) => :region_abbv
+        )
 
-    notations = []
 
-    push!(notations,WiNDC.notation_link(sgf_state_codes,:government_code,:code))
-    push!(notations,WiNDC.notation_link(sgf_states, :state, :region_fullname))
-    push!(notations,WiNDC.notation_link(item_codes, :item_code,:item_code));
-    push!(notations,WiNDC.notation_link(sgf_map, :item_name,:sgf_category));
-    push!(notations,WiNDC.notation_link(sgf_gams_map, :i,:sgf_category));
+    #df = apply_notations(df,notations)
 
-    for notation in notations
-        df = WiNDC.apply_notation!(df,notation)
-    end
+    #df[!,:amount] = parse.(Int,df[!,:amount])
 
-    df[!,:amount] = parse.(Int,df[!,:amount])
+    #df = combine(groupby(df,[:i,:region_abbv]),:amount => sum);
+    #df[!,:year] .= year;
+    #df[!,:value] = df[!,:amount_sum]./1_000
 
-    df = combine(groupby(df,[:i,:region_abbv]),:amount => sum);
-    df[!,:year] .= year;
-    df[!,:value] = df[!,:amount_sum]./1_000
-
-    df[!,:year] = Symbol.(df[!,:year])
-    df[!,:i] = Symbol.(df[!,:i])
-    df[!,:region_abbv] = Symbol.(df[!,:region_abbv])
+    #df[!,:year] = Symbol.(df[!,:year])
+    #df[!,:i] = Symbol.(df[!,:i])
+    #df[!,:region_abbv] = Symbol.(df[!,:region_abbv])
 
     return df
 end

@@ -1,6 +1,6 @@
 #include("./bea_api/bea_api.jl")
 include("./calibrate.jl")
-include("./data_defines.jl")
+#include("./data_defines.jl")
 
 
 
@@ -117,10 +117,9 @@ function _bea_apply_notations!(GU,use,supply)
 
     notations = bea_io_notations()
 
-    for notation in notations
-        use = apply_notation!(use,notation)
-        supply = apply_notation!(supply,notation)
-    end
+    use = apply_notations(use,notations)
+    supply = apply_notations(supply,notations)
+
     
     use[!,:industry] = Symbol.(use[!,:industry])
     use[!,:commodity] = Symbol.(use[!,:commodity])

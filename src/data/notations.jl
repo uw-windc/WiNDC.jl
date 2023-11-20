@@ -29,39 +29,61 @@ function fill_parameter!(GU::GamsUniverse,df_full::DataFrame,parm::Symbol,col_se
 end
 
 
+"""
+    notation_link
 
-struct WiNDC_notation
-    data::DataFrame
-    default::Symbol
-end
+Input data is dirty. This struct matches the dirty input data to a replacement
+dataframe in a consistent manner.
 
+dirty_to_replace -> The dirty column in the input data
+
+data -> The replacement dataframe
+dirty_to_match -> The column in the replacement dataframe that matches the dirty_to_replace
+    column in the input data.
+clean_column -> The column in the replacement dataframe with the correct output
+clean_name -> The final name that should appear in the output dataframe.
+"""
 struct notation_link
-    data::WiNDC_notation
-    dirty::Symbol
-    clean::Symbol
+    dirty_to_replace::Symbol
+    data::DataFrame
+    dirty_to_match::Symbol
+    clean_column::Symbol
+    clean_name::Symbol
 end
 
 
-function apply_notation!(df, notation)
-    windc_data = notation.data
-    data = windc_data.data
-    default = windc_data.default
+function apply_notation(df, notation)
+    data = notation.data
+    dirty = notation.dirty_to_replace
+    dirty_match = notation.dirty_to_match
+    clean = notation.clean_column
+    clean_name = notation.clean_name
 
-    dirty = notation.dirty
-    clean = notation.clean
-
-    if default != clean
-        cols = [clean,default]
+    if dirty_match != clean
+        cols = [clean,dirty_match]
     else
-        cols = [clean]
+        cols = [dirty_match]
     end
 
-    df = innerjoin(data[!,cols],df,on = clean => dirty)
+    df = innerjoin(data[!,cols],df,on = dirty_match => dirty, matchmissing=:notequal)
 
-    if default != clean
-        select!(df,Not(clean))
+    if dirty_match != clean
+        select!(df,Not(dirty_match))
+    end
+
+    if clean_name != clean
+        rename!(df, clean => clean_name)
     end
 
     return df
 
+
+end
+
+
+function apply_notations(df, notations)
+    for notation in notations
+        df = apply_notation(df,notation)
+    end
+    return df
 end
