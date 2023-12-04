@@ -76,8 +76,8 @@ function national_model_mcp_year(GU::GamsUniverse,year::Symbol;solver = PATHSolv
     ta = GamsParameter(GU,(:yr,:i))
     
     ty[:yr,:i] = GU[:ty0][:yr,:i] 
-    tm[:yr,:i] = GU[:tm0][:yr,:i] #.*0 #for the counterfactual
-    ta[:yr,:i] = GU[:ta0][:yr,:i] #.*0 #for the counterfactual
+    tm[:yr,:i] = GU[:tm0][:yr,:i] .*0 #for the counterfactual
+    ta[:yr,:i] = GU[:ta0][:yr,:i] .*0 #for the counterfactual
     
     
     thetava = GamsParameter(GU,(:va,:j)) #GU[:thetava]
