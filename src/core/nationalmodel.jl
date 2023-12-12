@@ -123,8 +123,19 @@ function national_model_mcp_year(GU::GamsUniverse,year::Symbol;solver = PATHSolv
         PM[M]>=0,   (start = 1,)
         PFX>=0,     (start = 1,)
         RA>=0,      (start = sum(fd0[[year],:i,[:pce]]),)
+
+        TA[I]
+        TM[I]
     end)
-    
+
+    for i∈I
+        fix(TM[i],tm[[year],[i]],force=true)
+        fix(TA[i],ta[[year],[i]],force=true)
+    end
+    #tm[:yr,:i] = GU[:tm0][:yr,:i] #.*0 #for the counterfactual
+    #ta[:yr,:i] = GU[:ta0][:yr,:i] #.*0 #for the counterfactual
+
+
     ####################
     ## Macros in Gams ##
     ####################
@@ -133,13 +144,13 @@ function national_model_mcp_year(GU::GamsUniverse,year::Symbol;solver = PATHSolv
             prod(PVA[va]^thetava[[va],[j]] for va∈VA)
         
         PMD[i=I],
-            (thetam[[i]]*(PFX*(1+tm[[year],[i]])/(1+tm0[[year],[i]]))^(1-2) + (1-thetam[[i]])*PY[i]^(1-2))^(1/(1-2))
+            (thetam[[i]]*(PFX*(1+TM[i])/(1+tm0[[year],[i]]))^(1-2) + (1-thetam[[i]])*PY[i]^(1-2))^(1/(1-2))
     
         PXD[i=I],
-            (thetax[[i]]*PFX^(1+2) + (1-thetax[[i]])*(PA[i]*(1-ta[[year],[i]])/(1-ta0[[year],[i]]))^(1+2))^(1/(1+2))
+            (thetax[[i]]*PFX^(1+2) + (1-thetax[[i]])*(PA[i]*(1-TA[i])/(1-ta0[[year],[i]]))^(1+2))^(1/(1+2))
     
         MD[i=I],
-            A[i]*m0[[year],[i]]*( (PMD[i]*(1+tm0[[year],[i]])) / (PFX*(1+tm[[year],[i]])))^2
+            A[i]*m0[[year],[i]]*( (PMD[i]*(1+tm0[[year],[i]])) / (PFX*(1+TM[i])))^2
     
         YD[i=I],
             A[i]*y0[[year],[i]]*(PMD[i]/PY[i])^2
@@ -148,7 +159,7 @@ function national_model_mcp_year(GU::GamsUniverse,year::Symbol;solver = PATHSolv
             A[i]*x0[[year],[i]]*(PFX/PXD[i])^2
 
         DS[i = I],
-            A[i]*a0[[year],[i]]*(PA[i]*(1-ta[[year],[i]])/(PXD[i]*(1-ta0[[year],[i]])))^2
+            A[i]*a0[[year],[i]]*(PA[i]*(1-TA[i])/(PXD[i]*(1-ta0[[year],[i]])))^2
     end)
     
     ########################
@@ -176,7 +187,7 @@ function national_model_mcp_year(GU::GamsUniverse,year::Symbol;solver = PATHSolv
         bal_RA,
             -RA + sum(PY[i]*fs0[[year],[i]] for i∈I) + PFX*bopdef -
              sum(PA[i]*fd0[[year],[i],[xfd]] for i∈I,xfd∈XFD) + sum(PVA[va]*va0[[year],[va],[j]] for va∈VA,j∈J) +
-             sum(A[i]*(a0[[year],[i]]*PA[i]*ta[[year],[i]] + PFX*MD[i]*tm[[year],[i]]) for i∈I) +
+             sum(A[i]*(a0[[year],[i]]*PA[i]*TA[i] + PFX*MD[i]*TM[i]) for i∈I) +
              sum(Y[j]*sum(ys0[[year],[j],[i]]*PY[i] for i∈I)*ty[[year],[j]] for j∈J) ⟂ RA
     
         mkt_PA[i = A_],
