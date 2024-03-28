@@ -41,12 +41,12 @@ function calibrate_national!(GU::GamsUniverse)
 
 
     # A couple of parameters get created/updated after calibration
-    @create_parameters(GU,begin
-        :bopdef0, (:yr,), ""
+    @parameters(GU,begin
+        bopdef0, (:yr,)
     end)
 
     for yr∈GU[:yr]
-        GU[:bopdef0][[yr]] = sum(GU[:m0][[yr],[i]]-GU[:x0][[yr],[i]] for i∈GU[:i] if GU[:a0][[yr],[i]]!=0)
+        GU[:bopdef0][[yr]] = sum(GU[:m0][[yr],[i]]-GU[:x0][[yr],[i]] for i∈GU[:i] if GU[:a0][[yr],[i]]!=0;init=0)
 
         for j∈GU[:j]
             GU[:s0][[yr],[j]] = sum(GU[:ys0][[yr],[j],:i])
@@ -55,12 +55,12 @@ function calibrate_national!(GU::GamsUniverse)
     end
 
     P = calibrate_zero_profit(GU)
-    @assert sum(abs.(P[:])) ≈ 0 "Calibration has failed to satisfy the zero profit condition."
+    @assert sum(abs.(P[:yr,:j,:tmp])) ≈ 0 "Calibration has failed to satisfy the zero profit condition."
 
     
 
     P = calibrate_market_clearance(GU)
-    @assert sum(abs.(P[:])) ≈ 0 "Calibration has failed to satisfy the market clearance condition."
+    @assert sum(abs.(P[:yr,:i,:tmp])) ≈ 0 "Calibration has failed to satisfy the market clearance condition."
 
 
 
@@ -172,9 +172,11 @@ function calibrate_national_model(GU::GamsUniverse,year::Symbol)
     # added, imports, exports and household supply.
     
 
-    fix.(fs0_[I],fs0[[year],I],force=true)
-    fix.(m0_[I] ,m0[[year],I] ,force=true)
-    fix.(x0_[I] ,x0[[year],I] ,force=true)
+    for i∈I
+        fix.(fs0_[i],fs0[year,i],force=true)
+        fix.(m0_[i] ,m0[year,i] ,force=true)
+        fix.(x0_[i] ,x0[year,i] ,force=true)
+    end
 
     # Fix labor compensation to target NIPA table totals.
 
@@ -253,13 +255,13 @@ end
 function calibrate_zero_profit(GU::GamsUniverse)
     G = deepcopy(GU)
 
-    @create_set!(G,:tmp,"tmp",begin
+    @set(G,tmp,"tmp",begin
         Y,""
         A,""
     end)
 
-    @create_parameters(G,begin
-        :profit, (:yr,:j,:tmp), " Zero profit condidtions"
+    @parameters(G,begin
+        profit, (:yr,:j,:tmp), (description = "Zero profit condidtions",)
     end)
 
     YR = G[:yr]
@@ -288,13 +290,13 @@ end
 function calibrate_market_clearance(GU::GamsUniverse)
     G = deepcopy(GU)
 
-    @create_set!(G,:tmp,"tmp",begin
+    @set(G,tmp,"tmp",begin
         PA,""
         PY,""
     end)
 
-    @create_parameters(G,begin
-        :market, (:yr,:i,:tmp), "Market clearance condition"
+    @parameters(G,begin
+        market, (:yr,:i,:tmp), (description = "Market clearance condition",)
     end)
 
     YR = G[:yr]

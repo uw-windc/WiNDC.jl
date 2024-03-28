@@ -88,13 +88,13 @@ function load_usa_trade!(GU,data_dir,info_dict)
     )
 
 
-    @create_set!(GU,:flow,"Trade Flow",begin
+    @set(GU,flow,"Trade Flow",begin
         imports, "Imports"
         exports, "Exports"
     end)
 
-    @create_parameters(GU,begin
-        :usatrd_shr, (:yr, :r,:i,:flow), "Share of total trade by region"
+    @parameters(GU,begin
+        usatrd_shr, (:yr, :r,:i,:flow), (description = "Share of total trade by region",)
     end)
 
     fill_parameter!(GU, df, :usatrd_shr, col_set_link, Dict())

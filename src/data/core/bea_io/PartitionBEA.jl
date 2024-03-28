@@ -7,24 +7,24 @@ include("./calibrate.jl")
 function _bea_io_initialize_universe!(GU)
 
 
-    @create_parameters(GU,begin
+    @parameters(GU,begin
         #Use
-        :id0, (:yr,:i,:j), "Intermediate Demand"
-        :fd0, (:yr,:i,:fd), "Final Demand"
-        :x0, (:yr,:i), "Exports"
-        :va0, (:yr, :va,:j), "Value Added"
-        :ts0, (:yr,:ts,:j), "Taxes and Subsidies"
-        :othtax, (:yr,:j), "Other taxes"
+        id0, (:yr,:i,:j), (description = "Intermediate Demand",)
+        fd0, (:yr,:i,:fd), (description = "Final Demand",)
+        x0, (:yr,:i), (description = "Exports",)
+        va0, (:yr, :va,:j), (description = "Value Added",)
+        ts0, (:yr,:ts,:j), (description = "Taxes and Subsidies",)
+        othtax, (:yr,:j), (description = "Other taxes",)
 
         #Supply
-        :ys0, (:yr,:j,:i), "Intermediate Supply"
-        :m0, (:yr,:i),   "Imports"
-        :mrg0, (:yr,:i), "Trade Margins"
-        :trn0, (:yr,:i), "Transportation Costs"
-        :cif0, (:yr,:i), ""
-        :duty0,(:yr,:i), "Import Duties"
-        :tax0, (:yr,:i), "Taxes on Products"
-        :sbd0, (:yr,:i), "Subsidies"
+        ys0, (:yr,:j,:i), (description = "Intermediate Supply",)
+        m0, (:yr,:i),   (description = "Imports",)
+        mrg0, (:yr,:i), (description = "Trade Margins",)
+        trn0, (:yr,:i), (description = "Transportation Costs",)
+        cif0, (:yr,:i)
+        duty0,(:yr,:i), (description = "Import Duties",)
+        tax0, (:yr,:i), (description = "Taxes on Products",)
+        sbd0, (:yr,:i), (description = "Subsidies",)
     end);
 
 
@@ -228,16 +228,16 @@ function _bea_data_break!(GU)
 
     # More parameters
 
-    @create_parameters(GU,begin
-        :s0, (:yr,:j), "Aggregate Supply"
-        :ms0, (:yr,:i,:m), "Margin Supply"
-        :md0, (:yr,:m,:i), "Margin Demand"
-        :fs0, (:yr,:i), "Household Supply"
-        :y0, (:yr,:i), "Gross Output"
-        :a0, (:yr,:i), "Armington Supply"
-        :tm0, (:yr,:i), "Tax net subsidy rate on intermediate demand"
-        :ta0, (:yr,:i), "Import Tariff"
-        :ty0, (:yr,:j), "Output tax rate"
+    @parameters(GU,begin
+        s0, (:yr,:j), (description = "Aggregate Supply",)
+        ms0, (:yr,:i,:m), (description = "Margin Supply",)
+        md0, (:yr,:m,:i), (description = "Margin Demand",)
+        fs0, (:yr,:i), (description = "Household Supply",)
+        y0, (:yr,:i), (description = "Gross Output",)
+        a0, (:yr,:i), (description = "Armington Supply",)
+        tm0, (:yr,:i), (description = "Tax net subsidy rate on intermediate demand",)
+        ta0, (:yr,:i), (description = "Import Tariff",)
+        ty0, (:yr,:j), (description = "Output tax rate",)
     end);
 
     GU[:s0][:yr,:j] = sum(GU[:ys0][:yr,:j,:i],dims=2);
@@ -268,12 +268,24 @@ function _bea_data_break!(GU)
     GU[:md0][:yr,:m,IMRG] = 0*GU[:md0][:yr,:m,IMRG]
     GU[:duty0][:yr,IMRG] = 0*GU[:duty0][:yr,IMRG]
 
-    mask = GU[:m0][:yr,:i] .>0
-    GU[:tm0][mask] = GU[:duty0][mask]./GU[:m0][mask]
+    #mask = GU[:m0][:yr,:i] .>0
+    #mask = Mask(GU,(:yr,:i))
+    #mask[:yr,:i] = (GU[:m0][:yr,:i] .> 0)
+    #GU[:tm0][mask] = GU[:duty0][mask]./GU[:m0][mask]
 
-    mask = GU[:a0][:yr,:i] .!= 0
-    GU[:ta0][mask] = (GU[:tax0][mask] - GU[:sbd0][mask]) ./ GU[:a0][mask]
+    #mask = GU[:a0][:yr,:i] .!= 0
+    #mask[:yr,:i] = (GU[:a0][:yr,:i] .!= 0)
+    #GU[:ta0][mask] = (GU[:tax0][mask] - GU[:sbd0][mask]) ./ GU[:a0][mask]
 
+
+    for yr∈GU[:yr],i∈GU[:i]
+        if GU[:m0][yr,i] > 0
+            GU[:tm0][yr,i] = GU[:duty0][yr,i]/GU[:m0][yr,i]
+        end
+        if GU[:a0][yr,i] != 0
+            GU[:ta0][yr,i] = (GU[:tax0][yr,i] - GU[:sbd0][yr,i]) / GU[:a0][yr,i]
+        end
+    end
 
 
 
@@ -293,12 +305,18 @@ function _bea_data_break!(GU)
     GU[:fd0][:yr,:i,[:pce]] = max.(0, GU[:fd0][:yr,:i,[:pce]]);
 
     #THis is stupid.
-    GU[:duty0][GU[:m0].==0] = (GU[:duty0][GU[:m0].==0] .=1);
+    #GU[:duty0][GU[:m0].==0] = (GU[:duty0][GU[:m0].==0] .=1);
+    for yr∈GU[:yr],i∈GU[:i]
+        if GU[:m0][yr,i] == 0
+            GU[:duty0][yr,i] = 1
+        end
+    end
 
 
 
-    m_shr = GamsParameter(GU,(:i,))
-    va_shr = GamsParameter(GU,(:j,:va))
+
+    m_shr = GamsStructure.Parameter(GU,(:i,))
+    va_shr = GamsStructure.Parameter(GU,(:j,:va))
 
 
     deactivate(GU,:i,:use,:oth)
@@ -308,7 +326,7 @@ function _bea_data_break!(GU)
     va_shr[:j,:va] = permutedims(sum(GU[:va0][:yr,:va,:j],dims=1)./ sum(GU[:va0][:yr,:va,:j],dims=(1,2)),(3,2,1))
 
     for yr∈GU[:yr],i∈GU[:i]
-        GU[:m0][[yr],[i]] = GU[:m0][[yr],[i]]<0 ? m_shr[[i]]*sum(GU[:m0][[yr],:]) : GU[:m0][[yr],[i]] 
+        GU[:m0][[yr],[i]] = GU[:m0][[yr],[i]]<0 ? m_shr[[i]]*sum(GU[:m0][[yr],:i]) : GU[:m0][[yr],[i]] 
     end
 
     for year∈GU[:yr],va∈GU[:va], j∈GU[:j]

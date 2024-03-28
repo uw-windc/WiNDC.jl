@@ -27,7 +27,7 @@ end
 
 
 function margins!(GU)
-	@create_set!(GU,:m,"Margins",begin
+	@set(GU,m,"Margins",begin
 		trn,	"Transport"
 		trd,	"Trade"
 	end)
@@ -35,7 +35,7 @@ function margins!(GU)
 end
 
 function bea_value_added!(GU)
-	@create_set!(GU,:va,"BEA Value added categories",begin
+	@set(GU, va, "BEA Value added categories",begin
 		othtax,	"Other taxes on production (T00OTOP)"
 		surplus,	"Gross operating surplus (V003)"
 		compen,	"Compensation of employees (V001)"
@@ -44,7 +44,7 @@ function bea_value_added!(GU)
 end
 
 function bea_final_demand!(GU)
-	@create_set!(GU,:fd,"BEA Final demand categories",begin
+	@set(GU, fd, "BEA Final demand categories",begin
 		fed_structures,	"Federal nondefense: Gross investment in structures"
 		def_equipment,	"Federal national defense: Gross investment in equipment"
 		changinv,	"Change in private inventories"
@@ -68,7 +68,7 @@ function bea_final_demand!(GU)
 end
 
 function bea_taxes_subsidies!(GU)
-	@create_set!(GU,:ts,"BEA Taxes and subsidies categories",begin
+	@set(GU, ts,"BEA Taxes and subsidies categories",begin
 		taxes,	"taxes"
 		subsidies,	"subsidies"
 	end)
@@ -82,7 +82,7 @@ function years!(GU, years)
 end
 
 function bea_goods_sectors!(GU)
-	@create_set!(GU,:i,"BEA Goods and sectors categories",begin
+	@set(GU, i,"BEA Goods and sectors categories",begin
 		ppd,	"Paper products manufacturing (322)"
 		res,	"Food services and drinking places (722)"
 		com,	"Computer systems design and related services (5415)"
@@ -161,7 +161,7 @@ function bea_goods_sectors!(GU)
 end
 
 function WiNDC_regions!(GU)
-	@create_set!(GU,:r,"States in the WiNDC database",begin                
+	@set(GU, r,"States in the WiNDC database",begin                
         AL, "Alabama"
         AK, "Alaska"
         AZ, "Arizona"

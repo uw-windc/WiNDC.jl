@@ -106,8 +106,8 @@ function load_faf_data!(GU,data_dir,info_dict)
         x -> stack(x,Not(:r,:year),variable_name = :i,value_name = :value)
 
 
-    @create_parameters(GU,begin
-        :rpc, (:yr,:r,:i), "Regional purchase coefficient"
+    @parameters(GU,begin
+        rpc, (:yr,:r,:i), (description = "Regional purchase coefficient",)
     end)
 
     col_set_link = Dict(:yr => :year, 

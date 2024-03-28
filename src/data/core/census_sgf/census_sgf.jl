@@ -82,8 +82,8 @@ end
 
 function load_sgf_data!(GU,data_dir,info_dict)
 
-    @create_parameters(GU,begin
-        :sgf_shr, (:yr,:r,:i), "Regional shares of final consumption"
+    @parameters(GU,begin
+        sgf_shr, (:yr,:r,:i), (description = "Regional shares of final consumption",)
     end)
 
     df = DataFrame()

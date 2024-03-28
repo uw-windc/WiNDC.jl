@@ -50,7 +50,7 @@ function national_model_mcp_year(GU::GamsUniverse,year::Symbol;solver = PATHSolv
     
     
     ####################
-    ## Parameters ######
+    ## GamsStructure.Parameters ######
     ####################
     
     va0 = GU[:va0]
@@ -71,19 +71,19 @@ function national_model_mcp_year(GU::GamsUniverse,year::Symbol;solver = PATHSolv
     id0 = GU[:id0]
     md0 = GU[:md0]
     
-    ty = GamsParameter(GU,(:yr,:i))
-    tm = GamsParameter(GU,(:yr,:i))
-    ta = GamsParameter(GU,(:yr,:i))
+    ty = GamsStructure.Parameter(GU,(:yr,:i))
+    tm = GamsStructure.Parameter(GU,(:yr,:i))
+    ta = GamsStructure.Parameter(GU,(:yr,:i))
     
     ty[:yr,:i] = GU[:ty0][:yr,:i] 
-    tm[:yr,:i] = GU[:tm0][:yr,:i] #.*0 #for the counterfactual
-    ta[:yr,:i] = GU[:ta0][:yr,:i] #.*0 #for the counterfactual
+    tm[:yr,:i] = GU[:tm0][:yr,:i].*0 #for the counterfactual
+    ta[:yr,:i] = GU[:ta0][:yr,:i].*0 #for the counterfactual
     
     
-    thetava = GamsParameter(GU,(:va,:j)) #GU[:thetava]
-    thetam = GamsParameter(GU,(:i,))     #GU[:thetam]
-    thetax = GamsParameter(GU,(:i,))     #GU[:thetax]
-    thetac = GamsParameter(GU,(:i,))     #GU[:thetac]
+    thetava = GamsStructure.Parameter(GU,(:va,:j)) #GU[:thetava]
+    thetam = GamsStructure.Parameter(GU,(:i,))     #GU[:thetam]
+    thetax = GamsStructure.Parameter(GU,(:i,))     #GU[:thetax]
+    thetac = GamsStructure.Parameter(GU,(:i,))     #GU[:thetac]
     
     
     for va∈VA, j∈J
@@ -179,6 +179,8 @@ function national_model_mcp_year(GU::GamsUniverse,year::Symbol;solver = PATHSolv
              sum(A[i]*(a0[[year],[i]]*PA[i]*ta[[year],[i]] + PFX*MD[i]*tm[[year],[i]]) for i∈I) +
              sum(Y[j]*sum(ys0[[year],[j],[i]]*PY[i] for i∈I)*ty[[year],[j]] for j∈J) ⟂ RA
     
+
+        #thetac[:i] = fd0[[year],:i,[:pce]]./sum(fd0[[year],:i,[:pce]])
         mkt_PA[i = A_],
             -DS[i] + thetac[[i]] * RA/PA[i] + sum(fd0[[year],[i],[xfd]] for xfd∈XFD) +
              sum(Y[j]*id0[[year],[i],[j]] for j∈Y_) ⟂ PA[i]
@@ -242,7 +244,7 @@ function national_model_mpsge_year(GU::GamsUniverse,year::Symbol)
 
 
     ####################
-    ## Parameters ######
+    ## GamsStructure.Parameters ######
     ####################
 
     va0 = GU[:va0]
@@ -264,9 +266,9 @@ function national_model_mpsge_year(GU::GamsUniverse,year::Symbol)
     id0 = GU[:id0]
     md0 = GU[:md0]
 
-    ty = GamsParameter(GU,(:yr,:i))
-    tm = GamsParameter(GU,(:yr,:i))
-    ta = GamsParameter(GU,(:yr,:i))
+    ty = GamsStructure.Parameter(GU,(:yr,:i))
+    tm = GamsStructure.Parameter(GU,(:yr,:i))
+    ta = GamsStructure.Parameter(GU,(:yr,:i))
 
     ty[:yr,:i] = GU[:ty0][:yr,:i] 
     #tm[:yr,:i] = GU[:tm0][:yr,:i] 
