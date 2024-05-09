@@ -18,7 +18,7 @@ XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
 [compat]
 CSV = "0.10.11"
 DataFrames = "1.6.1"
-GamsStructure = "0.5.1"
+GamsStructure = "0.6.0"
 HTTP = "1.10.0"
 Ipopt = "1.5.1"
 JSON = "0.21.4"
