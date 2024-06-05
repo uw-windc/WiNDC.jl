@@ -91,9 +91,9 @@ function load_bea_io!(GU::GamsUniverse,
 
     _bea_data_break!(GU)
 
-    calibrate_national!(GU)
+    (_,models) = calibrate_national!(GU)
 
-    return GU
+    return (GU, models)
 
 
 end

@@ -21,10 +21,13 @@ function calibrate_national!(GU::GamsUniverse)
     ]
 
 
-
+    models = Dict()
 
     for year∈GU[:yr]
         m = calibrate_national_model(GU,year)
+
+        models[year] = m
+
         set_silent(m)
         optimize!(m)
 
@@ -64,7 +67,7 @@ function calibrate_national!(GU::GamsUniverse)
 
 
 
-    return GU
+    return (GU,models)
 
 end
 

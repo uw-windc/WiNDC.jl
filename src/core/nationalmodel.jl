@@ -182,16 +182,19 @@ function national_model_mcp_year(GU::GamsUniverse,year::Symbol;solver = PATHSolv
 
         #thetac[:i] = fd0[[year],:i,[:pce]]./sum(fd0[[year],:i,[:pce]])
         mkt_PA[i = A_],
-            -DS[i] + thetac[[i]] * RA/PA[i] + sum(fd0[[year],[i],[xfd]] for xfd∈XFD) +
-             sum(Y[j]*id0[[year],[i],[j]] for j∈Y_) ⟂ PA[i]
+            DS[i] -(
+                 thetac[[i]] * RA/PA[i] + sum(fd0[[year],[i],[xfd]] for xfd∈XFD) +
+                sum(Y[j]*id0[[year],[i],[j]] for j∈Y_)
+             ) ⟂ PA[i]
     
     
         mkt_PY[i=I],
-            -sum(Y[j]*ys0[[year],[j],[i]] for j∈Y_) +
-             sum(MS[m_]*ms0[[year],[i],[m_]] for m_∈M) + YD[i] ⟂ PY[i]
+            sum(Y[j]*ys0[[year],[j],[i]] for j∈Y_) - (
+                sum(MS[m_]*ms0[[year],[i],[m_]] for m_∈M) + YD[i]
+             ) ⟂ PY[i]
     
         mkt_PVA[va = VA],
-            -sum(va0[[year],[va],[j]] for j∈J) +
+            sum(va0[[year],[va],[j]] for j∈J) -
              sum(Y[j]*va0[[year],[va],[j]]*CVA[j]/PVA[va] for j∈Y_) ⟂ PVA[va]
     
         mkt_PM[m_ = M],
