@@ -18,7 +18,10 @@ function generate_report(m::JuMP.Model)
         #mapping[extract_variable_ref(c.func[2])] = c.func[1]
     end
 
-    df = DataFrame(out,[:var,:value,:margin])
+    df = DataFrame(out,[:var,:value,:margin]) |>
+            x -> transform(x,
+                :var => (y -> replace.(name.(y),r"^(\w*)\[.*"=>s"\1")) => :base_name
+            )
     return df
 
 end

@@ -141,7 +141,14 @@ function state_disaggregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
         PFX>=0, (start =1,)
         
         RA[r=R]>=0, (start = c0[[r]],)
+
+        TM[R,G]
     end)
+
+    for r∈R,g∈G
+        fix(TM[r,g],tm[[r],[g]],force=true)
+    end
+    
 
     for r∈R,s∈S
         if kd0[[r],[s]] ≠ 0
@@ -230,7 +237,7 @@ function state_disaggregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
 
 
     @expressions(model,begin
-        PI_PFX_A[r=R,g=G], PFX*(1+tm[[r],[g]])/(1+tm0[[r],[g]])
+        PI_PFX_A[r=R,g=G], PFX*(1+TM[r,g])/(1+tm0[[r],[g]])
 
         # Need to do an ifelse on this
         PI_A_D[r=R,g=G],   (
@@ -263,7 +270,7 @@ function state_disaggregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
 
         I_PM_A[r=R,m=M,g=G],md0[[r],[m],[g]]
 
-        R_A_RA[r=R,g=G],	ta[[r],[g]]*PA[r,g]*O_A_PA[r,g] + tm[[r],[g]]*PFX*I_PFX_A[r,g]
+        R_A_RA[r=R,g=G],	ta[[r],[g]]*PA[r,g]*O_A_PA[r,g] + TM[r,g]*PFX*I_PFX_A[r,g]
 
 
         O_MS_PM[r=R,m=M],	sum(md0[[r],[m],[gm]] for gm∈GM )
