@@ -36,90 +36,90 @@ function state_disaggregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
     M = [m for m∈GU[:m]]
     GM = [gm for gm∈GU[:gm]]
 
-    ys0 = GamsParameter(GU,(:r,:s,:g))
+    ys0 = GamsStructure.Parameter(GU,(:r,:s,:g))
     ys0[:r,:s,:g] = GU[:ys0_][[year],:r,:s,:g]
     
-    id0 = GamsParameter(GU,(:r,:g,:s))
+    id0 = GamsStructure.Parameter(GU,(:r,:g,:s))
     id0[:r,:g,:s] = GU[:id0_][[year],:r,:g,:s]
     
-    ld0 = GamsParameter(GU,(:r,:s))
+    ld0 = GamsStructure.Parameter(GU,(:r,:s))
     ld0[:r,:s] = GU[:ld0_][[year],:r,:s]
     
-    kd0 = GamsParameter(GU,(:r,:s))
+    kd0 = GamsStructure.Parameter(GU,(:r,:s))
     kd0[:r,:s] = GU[:kd0_][[year],:r,:s]
     
-    ty0 = GamsParameter(GU,(:r,:s))
+    ty0 = GamsStructure.Parameter(GU,(:r,:s))
     ty0[:r,:s] = GU[:ty0_][[year],:r,:s]
 
     ty = ty0
     
-    m0 = GamsParameter(GU,(:r,:g))
+    m0 = GamsStructure.Parameter(GU,(:r,:g))
     m0[:r,:g] = GU[:m0_][[year],:r,:g]
     
-    x0 = GamsParameter(GU,(:r,:g))
+    x0 = GamsStructure.Parameter(GU,(:r,:g))
     x0[:r,:g] = GU[:x0_][[year],:r,:g]
     
-    rx0 = GamsParameter(GU,(:r,:g))
+    rx0 = GamsStructure.Parameter(GU,(:r,:g))
     rx0[:r,:g] = GU[:rx0_][[year],:r,:g]
     
-    md0 = GamsParameter(GU,(:r,:m,:g))
+    md0 = GamsStructure.Parameter(GU,(:r,:m,:g))
     md0[:r,:m,:g] = GU[:md0_][[year],:r,:m,:g]
     
-    nm0 = GamsParameter(GU,(:r,:g,:m))
+    nm0 = GamsStructure.Parameter(GU,(:r,:g,:m))
     nm0[:r,:g,:m] = GU[:nm0_][[year],:r,:g,:m]
     
-    dm0 = GamsParameter(GU,(:r,:g,:m))
+    dm0 = GamsStructure.Parameter(GU,(:r,:g,:m))
     dm0[:r,:g,:m] = GU[:dm0_][[year],:r,:g,:m]
     
-    s0 = GamsParameter(GU,(:r,:g))
+    s0 = GamsStructure.Parameter(GU,(:r,:g))
     s0[:r,:g] = GU[:s0_][[year],:r,:g]
     
-    a0 = GamsParameter(GU,(:r,:g))
+    a0 = GamsStructure.Parameter(GU,(:r,:g))
     a0[:r,:g] = GU[:a0_][[year],:r,:g]
     
-    ta0 = GamsParameter(GU,(:r,:g))
+    ta0 = GamsStructure.Parameter(GU,(:r,:g))
     ta0[:r,:g] = GU[:ta0_][[year],:r,:g]
     
     ta = deepcopy(ta0)
 
-    tm0 = GamsParameter(GU,(:r,:g))
+    tm0 = GamsStructure.Parameter(GU,(:r,:g))
     tm0[:r,:g] = GU[:tm0_][[year],:r,:g]
 
     tm = deepcopy(tm0)
 
-    tm[:r,:g] = tm[:r,:g]#*0 #Shock, set tariffs to zero
+    tm[:r,:g] = tm[:r,:g]*0 #Shock, set tariffs to zero
     
-    cd0 = GamsParameter(GU,(:r,:g))
+    cd0 = GamsStructure.Parameter(GU,(:r,:g))
     cd0[:r,:g] = GU[:cd0_][[year],:r,:g]
     
-    c0 = GamsParameter(GU,(:r,))
+    c0 = GamsStructure.Parameter(GU,(:r,))
     c0[:r] = GU[:c0_][[year],:r]
     
-    yh0 = GamsParameter(GU,(:r,:g))
+    yh0 = GamsStructure.Parameter(GU,(:r,:g))
     yh0[:r,:g] = GU[:yh0_][[year],:r,:g]
     
-    bopdef0 = GamsParameter(GU,(:r,))
+    bopdef0 = GamsStructure.Parameter(GU,(:r,))
     bopdef0[:r] = GU[:bopdef0_][[year],:r]
     
-    g0 = GamsParameter(GU,(:r,:g))
+    g0 = GamsStructure.Parameter(GU,(:r,:g))
     g0[:r,:g] = GU[:g0_][[year],:r,:g]
     
-    i0 = GamsParameter(GU,(:r,:g))
+    i0 = GamsStructure.Parameter(GU,(:r,:g))
     i0[:r,:g] = GU[:i0_][[year],:r,:g]
     
-    xn0 = GamsParameter(GU,(:r,:g))
+    xn0 = GamsStructure.Parameter(GU,(:r,:g))
     xn0[:r,:g] = GU[:xn0_][[year],:r,:g]
     
-    xd0 = GamsParameter(GU,(:r,:g))
+    xd0 = GamsStructure.Parameter(GU,(:r,:g))
     xd0[:r,:g] = GU[:xd0_][[year],:r,:g]
     
-    dd0 = GamsParameter(GU,(:r,:g))
+    dd0 = GamsStructure.Parameter(GU,(:r,:g))
     dd0[:r,:g] = GU[:dd0_][[year],:r,:g]
     
-    nd0 = GamsParameter(GU,(:r,:g))
+    nd0 = GamsStructure.Parameter(GU,(:r,:g))
     nd0[:r,:g] = GU[:nd0_][[year],:r,:g]
     
-    hhadj = GamsParameter(GU,(:r,))
+    hhadj = GamsStructure.Parameter(GU,(:r,))
     hhadj[:r] = GU[:hhadj0_][[year],:r]
 
     
@@ -178,7 +178,7 @@ function state_disaggregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
 
     end
        
-    lvs = GamsParameter(GU,(:r,:s))
+    lvs = GamsStructure.Parameter(GU,(:r,:s))
 
     lvs[:r,:s] = ld0[:r,:s]./(ld0[:r,:s] + kd0[:r,:s])
 
@@ -194,13 +194,13 @@ function state_disaggregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
         R_Y_RA[r=R,s=S],     sum(PY[r,g]*ty[[r],[s]]*O_Y_PY[r,g,s] for g∈G)
     end)
 
-    theta_X_PD = GamsParameter(GU,(:r,:g))
+    theta_X_PD = GamsStructure.Parameter(GU,(:r,:g))
     theta_X_PD[:r,:g] = xd0[:r,:g]./s0[:r,:g]
 
-    theta_X_PN = GamsParameter(GU,(:r,:g))
+    theta_X_PN = GamsStructure.Parameter(GU,(:r,:g))
     theta_X_PN[:r,:g] = xn0[:r,:g]./s0[:r,:g]
 
-    theta_X_PFX = GamsParameter(GU,(:r,:g))
+    theta_X_PFX = GamsStructure.Parameter(GU,(:r,:g))
     theta_X_PFX[:r,:g] = (x0[:r,:g] - rx0[:r,:g])./s0[:r,:g]
 
     @expressions(model,begin
@@ -220,9 +220,9 @@ function state_disaggregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
         I_PY_X[r=R,g=G], s0[[r],[g]]
     )
 
-    theta_PN_A = GamsParameter(GU,(:r,:g))
-    theta_PD_A = GamsParameter(GU,(:r,:g))
-    theta_PFX_A = GamsParameter(GU,(:r,:g))
+    theta_PN_A = GamsStructure.Parameter(GU,(:r,:g))
+    theta_PD_A = GamsStructure.Parameter(GU,(:r,:g))
+    theta_PFX_A = GamsStructure.Parameter(GU,(:r,:g))
 
     theta_PFX_A[:r,:g] = ifelse.(m0[:r,:g].!=0, m0[:r,:g].*(1 .+ tm0[:r,:g])./(m0[:r,:g].*(1 .+ tm0[:r,:g])+nd0[:r,:g]+dd0[:r,:g]),0)
     theta_PN_A[:r,:g] = ifelse.(nd0[:r,:g] .!=0, nd0[:r,:g] ./(nd0[:r,:g]+dd0[:r,:g]), 0)
@@ -275,7 +275,7 @@ function state_disaggregation_model_mcp_year(GU::GamsUniverse,year::Symbol)
 
 
 
-    theta_PA_C = GamsParameter(GU,(:r,:g))
+    theta_PA_C = GamsStructure.Parameter(GU,(:r,:g))
     theta_PA_C[:r,:g] = cd0[:r,:g]./sum(cd0[:r,:g],dims=2)
 
     @expressions(model,begin

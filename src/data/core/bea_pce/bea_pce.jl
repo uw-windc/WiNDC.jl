@@ -28,8 +28,8 @@ function load_bea_pce!(GU,data_dir,info_dict)
             )
 
 
-    @create_parameters(GU,begin
-        :pce_shr, (:yr,:r,:i), 	"Regional shares of final consumption"
+    @parameters(GU,begin
+        pce_shr, (:yr,:r,:i), 	(description = "Regional shares of final consumption",)
     end)
 
     col_set_link = Dict(:yr => :year, 

@@ -2,9 +2,9 @@
 
 function load_bea_gsp!(GU,data_dir,gsp_info)
 
-    @create_parameters(GU,begin
-        :region_shr, (:yr,:r,:i), "Regional share of value added"
-        :labor_shr, (:yr,:r,:i), "Estimated share of regional value added due to labor"
+    @parameters(GU,begin
+        region_shr, (:yr,:r,:i), (description = "Regional share of value added",)
+        labor_shr, (:yr,:r,:i), (description = "Estimated share of regional value added due to labor",)
     end)
 
     df = load_raw_bea_gsp(data_dir,1997:2021,gsp_info)
@@ -48,10 +48,10 @@ function load_bea_gsp!(GU,data_dir,gsp_info)
             year==yr && i==s
         end
 
-        klshare_l = GamsParameter(GU,(:r,:yr))
-        klshare_k = GamsParameter(GU,(:r,))
-        klshare_l_nat = GamsParameter(GU,(:r,))
-        klshare_k_nat = GamsParameter(GU,(:r,))
+        klshare_l = GamsStructure.Parameter(GU,(:r,:yr))
+        klshare_k = GamsStructure.Parameter(GU,(:r,))
+        klshare_l_nat = GamsStructure.Parameter(GU,(:r,))
+        klshare_k_nat = GamsStructure.Parameter(GU,(:r,))
 
         for y∈rolling_average_years(yr,8)
 
@@ -70,7 +70,7 @@ function load_bea_gsp!(GU,data_dir,gsp_info)
             klshare_k_nat[[r]] = row[:k_nat]
         end
 
-        gspbal = GamsParameter(GU,(:r,))
+        gspbal = GamsStructure.Parameter(GU,(:r,))
         X = filter([:year,:i]=>filter_cond,df)
         for row∈eachrow(X)
             r = row[:region_abbv]
@@ -80,7 +80,7 @@ function load_bea_gsp!(GU,data_dir,gsp_info)
         ld0 = GU[:va0][[yr],[:compen],[s]]
         kd0 = GU[:va0][[yr],[:surplus],[s]]
 
-        region_shr_ = GamsParameter(GU,(:r,))
+        region_shr_ = GamsStructure.Parameter(GU,(:r,))
         X = filter([:year,:i]=>filter_cond,df)
         for row∈eachrow(X)
             r = row[:region_abbv]
@@ -88,7 +88,7 @@ function load_bea_gsp!(GU,data_dir,gsp_info)
         end
         
 
-        m = gsp_share_calibrate(GU,gspbal,region_shr_,klshare_l,ld0,kd0,klshare_k,klshare_l_nat,klshare_k_nat)
+        m = gsp_share_calibrate(GU,yr,gspbal,region_shr_,klshare_l,ld0,kd0,klshare_k,klshare_l_nat,klshare_k_nat)
 
         set_silent(m)
 
@@ -226,7 +226,7 @@ function create_klshare(GU,df)
     klshare[!,:l] = df[!,:cmp] ./ (df[!,:gdp_diff] .+ df[!,:gos] .+ df[!,:cmp])
     #klshare[!,:l_nat] = 
 
-    kl = GamsParameter(GU,(:yr,:i))
+    kl = GamsStructure.Parameter(GU,(:yr,:i))
 
     kl[:yr,:i] = GU[:va0][:yr,[:compen],:i] ./ (GU[:va0][:yr,[:compen],:i] .+ GU[:va0][:yr,[:surplus],:i])
     kl = DataFrame(vec([(yr,i,kl[[yr],[i]]) for yr∈GU[:yr],i∈GU[:i]]),[:year,:i,:l_nat]);
@@ -265,7 +265,7 @@ end
 
 
 
-function gsp_share_calibrate(GU,gspbal,region_shr_,klshare_l,ld0,kd0,klshare_k,klshare_l_nat,klshare_k_nat)
+function gsp_share_calibrate(GU,yr,gspbal,region_shr_,klshare_l,ld0,kd0,klshare_k,klshare_l_nat,klshare_k_nat)
 
     m = JuMP.Model(Ipopt.Optimizer)
 
@@ -274,7 +274,7 @@ function gsp_share_calibrate(GU,gspbal,region_shr_,klshare_l,ld0,kd0,klshare_k,k
 
     @variables(m, begin
         K_SHR[r=R]>=.25*klshare_k_nat[[r]], (start = klshare_k[[r]],)
-        L_SHR[r=R]>=.25*klshare_l_nat[[r]], (start = klshare_l[[r]],)
+        L_SHR[r=R]>=.25*klshare_l_nat[[r]], (start = klshare_l[[r],yr],)
     end)
 
     for r∈R
