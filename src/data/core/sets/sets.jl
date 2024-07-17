@@ -68,10 +68,13 @@ function bea_final_demand!(GU)
 end
 
 function bea_taxes_subsidies!(GU)
-	@set(GU, ts,"BEA Taxes and subsidies categories",begin
-		taxes,	"taxes"
-		subsidies,	"subsidies"
-	end)
+	TS = GamsSet([
+			GamsElement(:taxes, "taxes"),
+			GamsElement(:subsidies, "subsidies")
+		], "BEA Taxes and subsidies categories")
+
+	add_set(GU,:ts, TS)
+	
     GU
 end
 
@@ -82,81 +85,83 @@ function years!(GU, years)
 end
 
 function bea_goods_sectors!(GU)
-	@set(GU, i,"BEA Goods and sectors categories",begin
-		ppd,	"Paper products manufacturing (322)"
-		res,	"Food services and drinking places (722)"
-		com,	"Computer systems design and related services (5415)"
-		amb,	"Ambulatory health care services (621)"
-		fbp,	"Food and beverage and tobacco products manufacturing (311-312)"
-		rec,	"Amusements, gambling, and recreation industries (713)"
-		con,	"Construction (23)"
-		agr,	"Farms (111-112)"
-		eec,	"Electrical equipment, appliance, and components manufacturing (335)"
-		use,	"Scrap, used and secondhand goods"
-		fnd,	"Federal general government (nondefense) (GFGN)"
-		pub,	"Publishing industries, except Internet (includes software) (511)"
-		hou,	"Housing (HS)"
-		fbt,	"Food and beverage stores (445)"
-		ins,	"Insurance carriers and related activities (524)"
-		tex,	"Textile mills and textile product mills (313-314)"
-		leg,	"Legal services (5411)"
-		fen,	"Federal government enterprises (GFE)"
-		uti,	"Utilities (22)"
-		nmp,	"Nonmetallic mineral products manufacturing (327)"
-		brd,	"Broadcasting and telecommunications (515, 517)"
-		bnk,	"Federal Reserve banks, credit intermediation, and related services (521-522)"
-		ore,	"Other real estate (ORE)"
-		edu,	"Educational services (61)"
-		ote,	"Other transportation equipment manufacturing (3364-3366, 3369)"
-		man,	"Management of companies and enterprises (55)"
-		mch,	"Machinery manufacturing (333)"
-		dat,	"Data processing, internet publishing, and other information services (518, 519)"
-		amd,	"Accommodation (721)"
-		oil,	"Oil and gas extraction (211)"
-		hos,	"Hospitals (622)"
-		rnt,	"Rental and leasing services and lessors of intangible assets (532-533)"
-		pla,	"Plastics and rubber products manufacturing (326)"
-		fof,	"Forestry, fishing, and related activities (113-115)"
-		fin,	"Funds, trusts, and other financial vehicles (525)"
-		tsv,	"Miscellaneous professional, scientific, and technical services (5412-5414, 5416-5419)"
-		nrs,	"Nursing and residential care facilities (623)"
-		sec,	"Securities, commodity contracts, and investments (523)"
-		art,	"Performing arts, spectator sports, museums, and related activities (711-712)"
-		mov,	"Motion picture and sound recording industries (512)"
-		fpd,	"Furniture and related products manufacturing (337)"
-		slg,	"State and local general government (GSLG)"
-		pri,	"Printing and related support activities (323)"
-		grd,	"Transit and ground passenger transportation (485)"
-		pip,	"Pipeline transportation (486)"
-		sle,	"State and local government enterprises (GSLE)"
-		osv,	"Other services, except government (81)"
-		trn,	"Rail transportation (482)"
-		smn,	"Support activities for mining (213)"
-		fmt,	"Fabricated metal products (332)"
-		pet,	"Petroleum and coal products manufacturing (324)"
-		mvt,	"Motor vehicle and parts dealers (441)"
-		cep,	"Computer and electronic products manufacturing (334)"
-		wst,	"Waste management and remediation services (562)"
-		mot,	"Motor vehicles, bodies and trailers, and parts manufacturing (3361-3363)"
-		adm,	"Administrative and support services (561)"
-		soc,	"Social assistance (624)"
-		alt,	"Apparel and leather and allied products manufacturing (315-316)"
-		pmt,	"Primary metals manufacturing (331)"
-		trk,	"Truck transportation (484)"
-		fdd,	"Federal general government (defense) (GFGD)"
-		gmt,	"General merchandise stores (452)"
-		wtt,	"Water transportation (483)"
-		wpd,	"Wood products manufacturing (321)"
-		wht,	"Wholesale trade (42)"
-		oth,	"Noncomparable imports and rest-of-the-world adjustment"
-		wrh,	"Warehousing and storage (493)"
-		ott,	"Other retail (4A0)"
-		che,	"Chemical products manufacturing (325)"
-		air,	"Air transportation (481)"
-		mmf,	"Miscellaneous manufacturing (339)"
-		otr,	"Other transportation and support activities (487-488, 492)"
-		min,	"Mining, except oil and gas (212)"
-	end)
+	add_set(GU, :i, GamsSet([
+		GamsElement(:ppd,	"Paper products manufacturing (322)"),
+		GamsElement(:res,	"Food services and drinking places (722)"),
+		GamsElement(:com,	"Computer systems design and related services (5415)"),
+		GamsElement(:amb,	"Ambulatory health care services (621)"),
+		GamsElement(:fbp,	"Food and beverage and tobacco products manufacturing (311-312)"),
+		GamsElement(:rec,	"Amusements, gambling, and recreation industries (713)"),
+		GamsElement(:con,	"Construction (23)"),
+		GamsElement(:agr,	"Farms (111-112)"),
+		GamsElement(:eec,	"Electrical equipment, appliance, and components manufacturing (335)"),
+		GamsElement(:use,	"Scrap, used and secondhand goods"),
+		GamsElement(:fnd,	"Federal general government (nondefense) (GFGN)"),
+		GamsElement(:pub,	"Publishing industries, except Internet (includes software) (511)"),
+		GamsElement(:hou,	"Housing (HS)"),
+		GamsElement(:fbt,	"Food and beverage stores (445)"),
+		GamsElement(:ins,	"Insurance carriers and related activities (524)"),
+		GamsElement(:tex,	"Textile mills and textile product mills (313-314)"),
+		GamsElement(:leg,	"Legal services (5411)"),
+		GamsElement(:fen,	"Federal government enterprises (GFE)"),
+		GamsElement(:uti,	"Utilities (22)"),
+		GamsElement(:nmp,	"Nonmetallic mineral products manufacturing (327)"),
+		GamsElement(:brd,	"Broadcasting and telecommunications (515, 517)"),
+		GamsElement(:bnk,	"Federal Reserve banks, credit intermediation, and related services (521-522)"),
+		GamsElement(:ore,	"Other real estate (ORE)"),
+		GamsElement(:edu,	"Educational services (61)"),
+		GamsElement(:ote,	"Other transportation equipment manufacturing (3364-3366, 3369)"),
+		GamsElement(:man,	"Management of companies and enterprises (55)"),
+		GamsElement(:mch,	"Machinery manufacturing (333)"),
+		GamsElement(:dat,	"Data processing, internet publishing, and other information services (518, 519)"),
+		GamsElement(:amd,	"Accommodation (721)"),
+		GamsElement(:oil,	"Oil and gas extraction (211)"),
+		GamsElement(:hos,	"Hospitals (622)"),
+		GamsElement(:rnt,	"Rental and leasing services and lessors of intangible assets (532-533)"),
+		GamsElement(:pla,	"Plastics and rubber products manufacturing (326)"),
+		GamsElement(:fof,	"Forestry, fishing, and related activities (113-115)"),
+		GamsElement(:fin,	"Funds, trusts, and other financial vehicles (525)"),
+		GamsElement(:tsv,	"Miscellaneous professional, scientific, and technical services (5412-5414, 5416-5419)"),
+		GamsElement(:nrs,	"Nursing and residential care facilities (623)"),
+		GamsElement(:sec,	"Securities, commodity contracts, and investments (523)"),
+		GamsElement(:art,	"Performing arts, spectator sports, museums, and related activities (711-712)"),
+		GamsElement(:mov,	"Motion picture and sound recording industries (512)"),
+		GamsElement(:fpd,	"Furniture and related products manufacturing (337)"),
+		GamsElement(:slg,	"State and local general government (GSLG)"),
+		GamsElement(:pri,	"Printing and related support activities (323)"),
+		GamsElement(:grd,	"Transit and ground passenger transportation (485)"),
+		GamsElement(:pip,	"Pipeline transportation (486)"),
+		GamsElement(:sle,	"State and local government enterprises (GSLE)"),
+		GamsElement(:osv,	"Other services, except government (81)"),
+		GamsElement(:trn,	"Rail transportation (482)"),
+		GamsElement(:smn,	"Support activities for mining (213)"),
+		GamsElement(:fmt,	"Fabricated metal products (332)"),
+		GamsElement(:pet,	"Petroleum and coal products manufacturing (324)"),
+		GamsElement(:mvt,	"Motor vehicle and parts dealers (441)"),
+		GamsElement(:cep,	"Computer and electronic products manufacturing (334)"),
+		GamsElement(:wst,	"Waste management and remediation services (562)"),
+		GamsElement(:mot,	"Motor vehicles, bodies and trailers, and parts manufacturing (3361-3363)"),
+		GamsElement(:adm,	"Administrative and support services (561)"),
+		GamsElement(:soc,	"Social assistance (624)"),
+		GamsElement(:alt,	"Apparel and leather and allied products manufacturing (315-316)"),
+		GamsElement(:pmt,	"Primary metals manufacturing (331)"),
+		GamsElement(:trk,	"Truck transportation (484)"),
+		GamsElement(:fdd,	"Federal general government (defense) (GFGD)"),
+		GamsElement(:gmt,	"General merchandise stores (452)"),
+		GamsElement(:wtt,	"Water transportation (483)"),
+		GamsElement(:wpd,	"Wood products manufacturing (321)"),
+		GamsElement(:wht,	"Wholesale trade (42)"),
+		GamsElement(:oth,	"Noncomparable imports and rest-of-the-world adjustment"),
+		GamsElement(:wrh,	"Warehousing and storage (493)"),
+		GamsElement(:ott,	"Other retail (4A0)"),
+		GamsElement(:che,	"Chemical products manufacturing (325)"),
+		GamsElement(:air,	"Air transportation (481)"),
+		GamsElement(:mmf,	"Miscellaneous manufacturing (339)"),
+		GamsElement(:otr,	"Other transportation and support activities (487-488, 492)"),
+		GamsElement(:min,	"Mining, except oil and gas (212)"),],
+	"BEA Goods and sectors categories"
+	))
+
     GU
 end
 
