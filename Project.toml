@@ -1,7 +1,7 @@
 name = "WiNDC"
 uuid = "699cc7a2-9ea9-42f0-a823-bc8522533664"
 authors = ["mitchphillipson <mitch.phillipson@gmail.com>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
