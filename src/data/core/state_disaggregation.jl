@@ -20,51 +20,51 @@ function state_dissagregation(GU::GamsUniverse)
     
     alias(G,:s,:g)
 
-    @create_parameters(G,begin
+    @parameters(G,begin
         
         #Production Data
-        :ys0_,	(:yr, :r, :s, :g),	"Regional sectoral output"
-        :ld0_,	(:yr, :r, :s),	"Labor demand"
-        :kd0_,	(:yr, :r, :s),	"Capital demand"
-        :id0_,	(:yr, :r, :g, :s),	"Regional intermediate demand"
-        :ty0_,	(:yr, :r, :s),	"Production tax rate"
+        ys0_,	(:yr, :r, :s, :g),	(description = "Regional sectoral output",)
+        ld0_,	(:yr, :r, :s),	(description = "Labor demand",)
+        kd0_,	(:yr, :r, :s),	(description = "Capital demand",)
+        id0_,	(:yr, :r, :g, :s),	(description = "Regional intermediate demand",)
+        ty0_,	(:yr, :r, :s),	(description = "Production tax rate",)
 
         #Consumption Data
-        :yh0_,	(:yr, :r, :s),	"Household production"
-        :fe0_,	(:yr, :r),	"Total factor supply"
-        :cd0_,	(:yr, :r, :s),	"Consumption demand"
-        :c0_,	(:yr, :r),	"Total final household consumption"
-        :i0_,	(:yr, :r, :s),	"Investment demand"
-        :g0_,	(:yr, :r, :s),	"Government demand"
-        :bopdef0_,	(:yr, :r),	"Balance of payments (closure parameter)"
-        :hhadj0_,	(:yr, :r),	"Household adjustment parameter"
+        yh0_,	(:yr, :r, :s),	(description = "Household production",)
+        fe0_,	(:yr, :r),	(description = "Total factor supply",)
+        cd0_,	(:yr, :r, :s),	(description = "Consumption demand",)
+        c0_,	(:yr, :r),	(description = "Total final household consumption",)
+        i0_,	(:yr, :r, :s),	(description = "Investment demand",)
+        g0_,	(:yr, :r, :s),	(description = "Government demand",)
+        bopdef0_,	(:yr, :r),	(description = "Balance of payments (closure parameter)",)
+        hhadj0_,	(:yr, :r),	(description = "Household adjustment parameter",)
         
         #Trade Data
-        :s0_,	(:yr, :r, :g),	"Total supply"
-        :xd0_,	(:yr, :r, :g),	"Regional supply to local market"
-        :xn0_,	(:yr, :r, :g),	"Regional supply to national market"
-        :x0_,	(:yr, :r, :g),	"Foreign Exports"
-        :rx0_,	(:yr, :r, :g),	"Re-exports"
-        :a0_,	(:yr, :r, :g),	"Domestic absorption"
-        :nd0_,	(:yr, :r, :g),	"Regional demand from national marke"
-        :dd0_,	(:yr, :r, :g),	"Regional demand from local market"
-        :m0_,	(:yr, :r, :g),	"Foreign Imports"
-        :ta0_,	(:yr, :r, :g),	"Absorption taxes"
-        :tm0_,	(:yr, :r, :g),	"Import taxes"
+        s0_,	(:yr, :r, :g),	(description = "Total supply",)
+        xd0_,	(:yr, :r, :g),	(description = "Regional supply to local market",)
+        xn0_,	(:yr, :r, :g),	(description = "Regional supply to national market",)
+        x0_,	(:yr, :r, :g),	(description = "Foreign Exports",)
+        rx0_,	(:yr, :r, :g),	(description = "Re-exports",)
+        a0_,	(:yr, :r, :g),	(description = "Domestic absorption",)
+        nd0_,	(:yr, :r, :g),	(description = "Regional demand from national market",)
+        dd0_,	(:yr, :r, :g),	(description = "Regional demand from local market",)
+        m0_,	(:yr, :r, :g),	(description = "Foreign Imports",)
+        ta0_,	(:yr, :r, :g),	(description = "Absorption taxes",)
+        tm0_,	(:yr, :r, :g),	(description = "Import taxes",)
 
         #Margins
-        :md0_,	(:yr, :r, :m, :g),	"Margin demand"    
-        :dm0_,	(:yr, :r, :g, :m),	"Margin supply from the local market"
-        :nm0_,	(:yr, :r, :g, :m),	"Margin demand from the national market"
+        md0_,	(:yr, :r, :m, :g),	(description = "Margin demand",)
+        dm0_,	(:yr, :r, :g, :m),	(description = "Margin supply from the local market",)
+        nm0_,	(:yr, :r, :g, :m),	(description = "Margin demand from the national market",)
         
         #GDP
-        :gdp0_,	(:yr, :r),	"Aggregate GDP"
+        gdp0_,	(:yr, :r),	(description = "Aggregate GDP",)
     end);
 
 
 
     #Regionalize production data using iomacro shares and GSP data:
-    va0_ = GamsParameter(G,(:yr,:r,:s),"Value Added")
+    va0_ = GamsStructure.Parameter(G,(:yr,:r,:s);description = "Value Added")
 
     for r∈G[:r],s∈G[:s],g∈G[:g]
         G[:ys0_][:yr,[r],[s],[g]] = GU[:region_shr][:yr,[r],[s]] .* GU[:ys0][:yr,[s],[g]]
@@ -81,7 +81,7 @@ function state_dissagregation(GU::GamsUniverse)
     
     end
     
-    sum(abs.(sum(G[:ys0_][:yr,:r,:s,[g]] for g∈G[:g]) .* (1 .- G[:ty0_][:yr,:r,:s]) .- (G[:ld0_][:yr,:r,:s] + G[:kd0_][:yr,:r,:s] + sum(G[:id0_][:yr,:r,[g],:s] for g∈G[:g]))))
+    #sum(abs.(sum(G[:ys0_][:yr,:r,:s,[g]] for g∈G[:g]) .* (1 .- G[:ty0_][:yr,:r,:s]) .- (G[:ld0_][:yr,:r,:s] + G[:kd0_][:yr,:r,:s] + sum(G[:id0_][:yr,:r,[g],:s] for g∈G[:g]))))
 
 
     # Aggregate final demand categories:
@@ -125,7 +125,7 @@ function state_dissagregation(GU::GamsUniverse)
         G[:ta0_][:yr,[r],:g] = GU[:ta0][:yr,:i]
     end
 
-    thetaa = GamsParameter(G,(:yr,:r,:g),"Share of regional absorption")
+    thetaa = GamsStructure.Parameter(G,(:yr,:r,:g);description = "Share of regional absorption")
 
     for yr∈G[:yr],g∈G[:g]
         if sum((1 .- G[:ta0_][[yr],[r],[g]]) .* G[:a0_][[yr],[r],[g]] for r∈G[:r]) !=0
@@ -148,7 +148,9 @@ function state_dissagregation(GU::GamsUniverse)
     # composite. This is due to balancing issues when defining domestic and national
     # demands. Particularly in the other goods sector which is a composite of the
     # "fudge" factor in the national IO accounts.
-    mask = (G[:s0_][:yr,:r,:g] .- G[:x0_][:yr,:r,:g]) .< 0
+    #return G
+    mask = Mask(G,(:yr,:r,:g))
+    mask[:yr,:r,:g] = (G[:s0_][:yr,:r,:g] .- G[:x0_][:yr,:r,:g] .< 0)
     G[:rx0_][mask] =  G[:x0_][mask] .- G[:s0_][mask];
 
     # Initial level of rx0_ makes the armington supply zero profit condition
@@ -156,7 +158,7 @@ function state_dissagregation(GU::GamsUniverse)
     # re-exports). Adjust rx0_ upward for these enough to make these conditions
     # zeroed out. Then subsequently adjust parameters through the circular economy.
 
-    diff = GamsParameter(G,(:yr,:r,:g),"Negative numbers still exist due to sharing parameter")
+    diff = GamsStructure.Parameter(G,(:yr,:r,:g);description = "Negative numbers still exist due to sharing parameter")
 
     diff[:yr,:r,:g] = X = - min.(0,(1 .- G[:ta0_][:yr,:r,:g]).*G[:a0_][:yr,:r,:g] .+ G[:rx0_][:yr,:r,:g] .-  ((1 .+G[:tm0_][:yr,:r,:g]).*G[:m0_][:yr,:r,:g] .+ sum(G[:md0_][:yr,:r,[m],:g] for m∈G[:m])))
 
@@ -171,7 +173,7 @@ function state_dissagregation(GU::GamsUniverse)
 
     add_set(G,:gm,GamsSet(s,"Commodities employed in margin supply"));
 
-    dd0max = GamsParameter(G,(:yr,:r,:g),"Maximum regional demand from local market")
+    dd0max = GamsStructure.Parameter(G,(:yr,:r,:g);description = "Maximum regional demand from local market")
 
 
     dd0max[:yr,:r,:g] = min.((1 .- G[:ta0_][:yr,:r,:g]).*G[:a0_][:yr,:r,:g] .+ G[:rx0_][:yr,:r,:g] .-
@@ -179,7 +181,7 @@ function state_dissagregation(GU::GamsUniverse)
                             G[:s0_][:yr,:r,:g] - (G[:x0_][:yr,:r,:g] - G[:rx0_][:yr,:r,:g]));
 
 
-    rpc = GamsParameter(G,(:yr,:r,:g),"Regional purchase coefficients")
+    rpc = GamsStructure.Parameter(G,(:yr,:r,:g);description = "Regional purchase coefficients")
 
     rpc[:yr,:r,:g] = GU[:rpc][:yr,:r,:i]
     
@@ -193,9 +195,9 @@ function state_dissagregation(GU::GamsUniverse)
 
     # Assume margins come both from local and national production. Assign like
     # dd0. Use information on national margin supply to enforce other identities.
-    totmargsupply = GamsParameter(G,(:yr,:r,:m,:g), "Designate total supply of margins")
-    margshr = GamsParameter(G, (:yr,:r,:m),	"Share of margin demand by region")
-    shrtrd = GamsParameter(G, (:yr,:r,:m,:g), "Share of margin total by margin type")
+    totmargsupply = GamsStructure.Parameter(G,(:yr,:r,:m,:g);description =  "Designate total supply of margins")
+    margshr = GamsStructure.Parameter(G, (:yr,:r,:m);description = 	"Share of margin demand by region")
+    shrtrd = GamsStructure.Parameter(G, (:yr,:r,:m,:g);description =  "Share of margin total by margin type")
     
     #$sum((g,rr), md0_(yr,rr,m,g))
     margshr[:yr,:r,:m] = permutedims(permutedims(sum(G[:md0_][:yr,:r,:m,[g]] for g∈G[:g]),(1,3,2)) ./ sum( G[:md0_][:yr,[r],:m,[g]] for r∈G[:r],g∈G[:g]),(1,3,2))
@@ -226,26 +228,28 @@ function state_dissagregation(GU::GamsUniverse)
 
     # Remove small numbers
     for (name,parm) in parameters(G)
-        mask = isapprox.(parm,0,atol=1e-8)
-        parm[mask] = (parm[mask].=0)
+        d = domain(parm)
+        mask = Mask(G, d)
+        mask[d...] = isapprox.(parm[d...],0,atol=1e-8)
+        parm[mask] = 0
     end
 
 
     #Set Household adjustments
-    ibal_inc = GamsParameter(G,(:yr,:r),"")
+    ibal_inc = GamsStructure.Parameter(G,(:yr,:r))
     ibal_inc[:yr,:r] = sum(va0_[:yr,:r,[s]] for s∈G[:s]) + #E_RA_PL + E_RA_PK
                     sum(G[:yh0_][:yr,:r,[s]] for s∈G[:s]) + #E_RA_PY
                     G[:bopdef0_][:yr,:r] - # + hhadj[[r]] # E_RA_PFX
                     sum(G[:g0_][:yr,:r,[s]] + G[:i0_][:yr,:r,[s]] for s∈G[:s]) #E_RA_PA
 
-    ibal_taxrev = GamsParameter(G,(:yr,:r),"")
+    ibal_taxrev = GamsStructure.Parameter(G,(:yr,:r))
     ibal_taxrev[:yr,:r] = sum(
                         G[:ta0_][:yr,:r,[s]] .* G[:a0_][:yr,:r,[s]] + G[:tm0_][:yr,:r,[s]].*G[:m0_][:yr,:r,[s]] + #R_A_RA
                         G[:ty0_][:yr,:r,[s]] .* sum(G[:ys0_][:yr,:r,[s],[g]] for g∈G[:g]) #R_Y_RA
                             for s∈G[:s]) 
 
 
-    ibal_balance = GamsParameter(G,(:yr,:r),"")
+    ibal_balance = GamsStructure.Parameter(G,(:yr,:r))
     ibal_balance[:yr,:r] = G[:c0_][:yr,:r] .- ibal_inc[:yr,:r] .- ibal_taxrev[:yr,:r]
 
     G[:hhadj0_][:yr,:r] = ibal_balance[:yr,:r]
@@ -285,9 +289,9 @@ function _state_zero_profit(G::GamsUniverse)
 
 end
 
-function _state_income_balance(G::GamsUniverse,va0_::GamsParameter)
+function _state_income_balance(G::GamsUniverse,va0_::GamsStructure.Parameter)
 
-    ibal_inc = GamsParameter(G,(:yr,:r),"")
+    ibal_inc = GamsStructure.Parameter(G,(:yr,:r))
     ibal_inc[:yr,:r] = sum(va0_[:yr,:r,[s]] for s∈G[:s]) + #E_RA_PL + E_RA_PK
                     sum(G[:yh0_][:yr,:r,[s]] for s∈G[:s]) + #E_RA_PY
                     G[:bopdef0_][:yr,:r] - # + hhadj[[r]] # E_RA_PFX
@@ -297,19 +301,19 @@ function _state_income_balance(G::GamsUniverse,va0_::GamsParameter)
     #	Tax revenues are expressed as values per unit activity, so we
     #	need multiply these by the activity level to compute total income:
 
-    ibal_taxrev = GamsParameter(G,(:yr,:r),"")
+    ibal_taxrev = GamsStructure.Parameter(G,(:yr,:r))
     ibal_taxrev[:yr,:r] = sum(
                         G[:ta0_][:yr,:r,[s]] .* G[:a0_][:yr,:r,[s]] + G[:tm0_][:yr,:r,[s]].*G[:m0_][:yr,:r,[s]] + #R_A_RA
                         G[:ty0_][:yr,:r,[s]] .* sum(G[:ys0_][:yr,:r,[s],[g]] for g∈G[:g]) #R_Y_RA
                             for s∈G[:s]) 
 
 
-    ibal_balance = GamsParameter(G,(:yr,:r),"")
+    ibal_balance = GamsStructure.Parameter(G,(:yr,:r))
 
 
     ibal_balance[:yr,:r] = G[:c0_][:yr,:r] - ibal_inc[:yr,:r] - ibal_taxrev[:yr,:r]
 
-    return sum(abs.(ibal_balance))
+    return sum(abs.(ibal_balance[:yr,:r]))
 end
 
 
