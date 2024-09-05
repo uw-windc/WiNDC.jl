@@ -45,6 +45,13 @@ value_added(data::WiNDCtable; filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symb
         [:datatype => "value_added", filter...]
     ) #|> x -> select(x, Not(:datatype))
 
+final_demand(data::WiNDCtable; filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,Any}}()) where {T<:Any} = 
+    _extract_and_filter(
+        data.table, 
+        [:datatype => "final_demand", filter...]
+    ) #|> x -> select(x, Not(:datatype))
+
+
 
 intermediate_supply(data::WiNDCtable; filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,Any}}()) where {T<:Any} = 
     _extract_and_filter(
@@ -66,7 +73,6 @@ supply_extras(data::WiNDCtable;
         _extract_and_filter(data.table, filter) |> 
             x -> subset(x, :datatype => ByRow(∈(columns))) #|>
             #x -> select(x, Not(:datatype))
-
 
 
 household_supply(data::WiNDCtable; column = :value, output = :value) = 
@@ -123,7 +129,17 @@ armington_supply(data::WiNDCtable; column = :value, output = :value) =
     ) |>
     x -> select(x, :commodities, :state, :year, output)
 
+margin_supply(data::WiNDCtable; column = :value, output = :value) = 
+    supply_extras(data; columns = ["margin_supply"]) |>
+        x -> select(x, Not(:datatype)) |>
+        x -> rename(x, column => output) |>
+        x -> select(x, [:commodities, :sectors, :state, :year, output])
 
+margin_demand(data::WiNDCtable; column = :value, output = :value) = 
+    supply_extras(data; columns = ["margin_demand"]) |>
+        x -> select(x, Not(:datatype)) |>
+        x -> rename(x, column => output) |>
+        x -> select(x, [:commodities, :sectors, :state, :year, output])
 
 
 import_tariff(data::WiNDCtable; column = :value, output = :value) = 
