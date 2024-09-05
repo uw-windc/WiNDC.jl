@@ -10,7 +10,7 @@ domain(data::WiNDCtable) = data.domain
 function _extract_and_filter(base_table::DataFrame, filter::Vector{Pair{Symbol, T}}) where {T<:Any}
     X = base_table
     for (key, value) in filter
-        @assert key∈domain(X) "Error: $key not in domain of table"
+        #@assert key∈domain(X) "Error: $key not in domain of table"
         X = subset(X, key => ByRow(==(value)))
     end
     return X
@@ -31,13 +31,6 @@ This may change to a dictionary in the future.
 """
 all_data(data::WiNDCtable; filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,Any}}()) where {T<:Any} = 
     _extract_and_filter(data.table, filter)
-
-
-intermediate_demand(data::WiNDCtable; filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,Any}}()) where {T<:Any} = 
-    _extract_and_filter(
-        data.table, 
-        [:datatype => "intermediate_demand", filter...]
-    ) #|> x -> select(x, Not(:datatype))
 
 
 intermediate_demand(data::WiNDCtable; filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,Any}}()) where {T<:Any} = 
