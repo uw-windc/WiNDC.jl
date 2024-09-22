@@ -90,7 +90,7 @@ function calibrate(data::WiNDCtable)
     @objective(
         M, 
         Min, 
-        all_data(data) |> #; filter = [:year => year]) |>
+        all_data(data) |> 
             x -> transform(x,
                 [:value, :variable] => ByRow((val, var) -> 
                     abs(val) * (var/val - 1)^2) => :objective
@@ -126,7 +126,7 @@ function calibrate(data::WiNDCtable)
         on = [:commodities, :state, :year]
     ) |> 
     x -> transform(x,
-        [:commodities, :value] => ByRow((c,v) -> c∈marginal_goods ? 0 : max(lob*v)) => :lower,
+        [:commodities, :value] => ByRow((c,v) -> c∈marginal_goods ? 0 : max(0,lob*v)) => :lower,
         [:commodities, :value] => ByRow((c,v) -> c∈marginal_goods ? 0 : abs(upb*v)) => :upper,
     )|>
     x -> @constraint(M,
