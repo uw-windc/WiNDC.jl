@@ -19,16 +19,16 @@ adjust_negative_values!(data::DataFrame, df::DataFrame) =
             x -> groupby(x, [:year, :sectors, :state]) |>
             x -> combine(x, :value => sum => :va_value),
         on = [:sectors, :state]
-        ) |>
-        x -> transform(x,
-            [:total_value, :commodity_value, :va_value] => ByRow((t,c,v) -> t == 0 ? 0 : (c*v)/t) => :value
-        ) |>
-        x -> select(x, :commodities, :sectors, :state, :year, :value)  |>
-        x -> leftjoin!(data, x, on = [:commodities, :sectors, :state, :year], makeunique=true) |>
-        x -> transform!(x,
-            [:value, :value_1] => ByRow((v0,v1) -> ismissing(v1) || v0 >0 ? v0 : v1) => :value
-        ) |>
-        x -> select!(x, Not(:value_1))
+    ) |>
+    x -> transform(x,
+        [:total_value, :commodity_value, :va_value] => ByRow((t,c,v) -> t == 0 ? 0 : (c*v)/t) => :value
+    ) |>
+    x -> select(x, :commodities, :sectors, :state, :year, :value)  |>
+    x -> leftjoin!(data, x, on = [:commodities, :sectors, :state, :year], makeunique=true) |>
+    x -> transform!(x,
+        [:value, :value_1] => ByRow((v0,v1) -> ismissing(v1) || v0 >0 ? v0 : v1) => :value
+    ) |>
+    x -> select!(x, Not(:value_1))
 
 
 
