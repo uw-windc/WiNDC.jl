@@ -1,11 +1,6 @@
-struct WiNDCtable
-    table::DataFrame
-    domain::Vector{Symbol}
-    sets::DataFrame
-end
+abstract type WiNDCtable end;
 
-
-domain(data::WiNDCtable) = data.domain
+domain(data::WiNDCtable) = throw(ArgumentError("domain not implemented for WiNDCtable"))
 
 function _extract_and_filter(base_table::DataFrame, filter::Vector{Pair{Symbol, T}}) where {T<:Any}
     X = base_table
@@ -33,47 +28,58 @@ all_data(data::WiNDCtable; filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,
     _extract_and_filter(data.table, filter)
 
 
-intermediate_demand(data::WiNDCtable; filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,Any}}()) where {T<:Any} = 
-    _extract_and_filter(
-        data.table, 
-        [:datatype => "intermediate_demand", filter...]
-    ) #|> x -> select(x, Not(:datatype))
+#################
+## Base Tables ##
+#################
 
-value_added(data::WiNDCtable; filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,Any}}()) where {T<:Any} = 
-    _extract_and_filter(
-        data.table, 
-        [:datatype => "value_added", filter...]
-    ) #|> x -> select(x, Not(:datatype))
+intermediate_demand(
+    io::WiNDCtable;
+    filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,Any}}(),
+    column = :value,
+    output = :value
+    ) where {T<:Any} = 
+        all_data(io; filter = [:datatype => "intermediate_demand", filter...]) |>
+            x -> rename(x, column => output)
 
-final_demand(data::WiNDCtable; filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,Any}}()) where {T<:Any} = 
-    _extract_and_filter(
-        data.table, 
-        [:datatype => "final_demand", filter...]
-    ) #|> x -> select(x, Not(:datatype))
+value_added(
+    io::WiNDCtable;
+    filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,Any}}(),
+    column = :value,
+    output = :value
+    ) where {T<:Any} = 
+        all_data(io; filter = [:datatype => "value_added", filter...]) |>
+            x -> rename(x, column => output)
 
+final_demand(
+    io::WiNDCtable;
+    filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,Any}}(),
+    column = :value,
+    output = :value
+    ) where {T<:Any} = 
+        all_data(io; filter = [:datatype => "final_demand", filter...]) |>
+            x -> rename(x, column => output)
 
+intermediate_supply(
+    io::WiNDCtable;
+    filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,Any}}(),
+    column = :value,
+    output = :value
+    ) where {T<:Any} = 
+        all_data(io; filter = [:datatype => "intermediate_supply", filter...]) |>
+            x -> rename(x, column => output)
 
-intermediate_supply(data::WiNDCtable; filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,Any}}()) where {T<:Any} = 
-    _extract_and_filter(
-        data.table, 
-        [:datatype => "intermediate_supply", filter...]
-    ) #|> x -> select(x, Not(:datatype))
+supply_extras(
+    io::WiNDCtable;
+    filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,Any}}(),
+    column = :value,
+    output = :value
+    ) = 
+        all_data(io, filter = [:datatype => "supply_extras", filter...]) |> 
+            x -> rename(x, column => output)
 
-supply_extras(data::WiNDCtable; 
-    columns = [
-        "imports",
-        #"cif",
-        "margin_demand",
-        "margin_supply",
-        "duty",
-        "tax",
-        "subsidies",
-        ],
-    filter::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol,Any}}()) where {T<:Any} = 
-        _extract_and_filter(data.table, filter) |> 
-            x -> subset(x, :datatype => ByRow(∈(columns))) #|>
-            #x -> select(x, Not(:datatype))
-
+######################
+## Aggregate Tables ##
+######################
 
 household_supply(data::WiNDCtable; column = :value, output = :value) = 
     final_demand(data) |>
@@ -83,9 +89,6 @@ household_supply(data::WiNDCtable; column = :value, output = :value) =
         x -> transform(x,
             [:value,column] => ByRow((v,y) -> v>0 ? 0 : -y) => output
         ) |>
-        #x -> subset(x,
-        #    column => ByRow(!=(0))
-        #) |>
         x -> select(x, [:commodities, :state, :year, output])
 
 
