@@ -5,31 +5,34 @@ domain(data::WiNDCtable) = throw(ArgumentError("domain not implemented for WiNDC
 
 
 
-function get_set(data::WiNDCtable, set_name::String) 
+function get_set(data::T, set_name::String) where T<:WiNDCtable
     data.sets |>
         x -> subset(x, 
             :set => ByRow(==(set_name))
         )    
 end
 
-function get_table(data::WiNDCtable)
+function get_table(data::T) where T<:WiNDCtable
     return data.table
 end
 
 
 function get_subtable(
-        data::WiNDCtable, 
+        data::T, 
         subtable::String;
         column::Symbol = :value,
-        output::Symbol = :value
-    )
+        output::Symbol = :value,
+        negative = false
+    ) where T<:WiNDCtable
 
     columns = domain(data)
     push!(columns, column)
 
     elements = get_set(data, subtable) |>
         x -> select(x, :element)
-        
+
+    @assert(size(elements, 1) > 0, "Error: No elements found in subtable $subtable")
+
     return get_table(data) |>
         x -> innerjoin(
                 x,
@@ -37,5 +40,6 @@ function get_subtable(
             on = [:subtable => :element]
         ) |>
         x -> select(x, columns) |>
-        x -> rename(x, column => output)
+        x -> rename(x, column => output) |>
+        x -> transform(x, output => ByRow(y -> negative ? -y : identity(y)) => output)
 end
