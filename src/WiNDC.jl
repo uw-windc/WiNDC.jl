@@ -5,7 +5,7 @@ using DataFrames, CSV, XLSX, FileIO, JuMP, Ipopt#, MPSGE
 
 include("structs.jl")
 
-export all_data, domain, WiNDCtable, extract_set
+export all_data, domain, WiNDCtable, get_set, get_table, get_subtable
 
 include("national/structs.jl")
 
