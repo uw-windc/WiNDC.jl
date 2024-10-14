@@ -18,15 +18,14 @@ end
 
 
 function get_subtable(
-        data::T, 
-        subtable::String;
-        column::Symbol = :value,
-        output::Symbol = :value,
-        negative = false
-    ) where T<:WiNDCtable
+    data::WiNDCtable,
+    subtable::String,
+    column::Vector{Symbol};
+    negative::Bool = false
+)  
 
     columns = domain(data)
-    push!(columns, column)
+    append!(columns, column)
 
     elements = get_set(data, subtable) |>
         x -> select(x, :element)
@@ -39,7 +38,21 @@ function get_subtable(
                 elements,
             on = [:subtable => :element]
         ) |>
-        x -> select(x, columns) |>
+        x -> select(x, columns)
+
+end
+
+
+function get_subtable(
+        data::WiNDCtable, 
+        subtable::String;
+        column::Symbol = :value,
+        output::Symbol = :value,
+        negative = false
+    )
+
+    return get_subtable(data, subtable, [column])
         x -> rename(x, column => output) |>
         x -> transform(x, output => ByRow(y -> negative ? -y : identity(y)) => output)
 end
+
