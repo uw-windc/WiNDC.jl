@@ -7,6 +7,10 @@ include("structs.jl")
 
 export all_data, domain, WiNDCtable, extract_set
 
+include("national/structs.jl")
+
+export NationalTable
+
 include("national/national_data.jl")
 
 export load_raw_national_summary_data
