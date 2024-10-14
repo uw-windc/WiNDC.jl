@@ -51,8 +51,7 @@ function load_raw_national_summary_data(raw_data_directory)
     ) |>
         x -> subset(x, 
             :commodities => ByRow(∉(marginal_goods)) 
-    )
-    
+    ) 
 
     insurance_code = "524"
 
@@ -85,26 +84,28 @@ function load_raw_national_summary_data(raw_data_directory)
 
     df = vcat(use, supply) |> 
             x -> innerjoin(x, subtables, on = [:commodities, :sectors, :table]) |>
-            x -> select(x, :commodities, :sectors, :state, :year, :datatype, :value) |>
-            x -> unstack(x, :datatype, :value) |>
+            x -> select(x, :commodities, :sectors, :state, :year, :subtable, :value) |>
+            x -> unstack(x, :subtable, :value) |>
             x -> coalesce.(x, 0) |>
             x -> transform(x,
                 [:intermediate_demand, :intermediate_supply] => ByRow(
                     (d,s) -> (max(0, d - min(0, s)), max(0, s - min(0, d)))) => [:intermediate_demand, :intermediate_supply], #negative flows are reversed
                 :subsidies => ByRow(y -> -y) => :subsidies,
                 :margin_demand => ByRow(y ->  max(0,y)) => :margin_demand,
-                :margin_supply => ByRow(y -> -min(0,y)) => :margin_supply
+                :margin_supply => ByRow(y -> -min(0,y)) => :margin_supply,
+                :personal_consumption => ByRow(y -> max(0,y)) => :personal_consumption,
+                :household_supply => ByRow(y -> -min(0,y)) => :household_supply,
             ) |>
-            x -> stack(x, Not(:commodities, :sectors, :state, :year), variable_name = :datatype, value_name = :value) |>
+            x -> stack(x, Not(:commodities, :sectors, :state, :year), variable_name = :subtable, value_name = :value) |>
             x -> subset(x, :value => ByRow(!=(0))) |>
-            x -> select(x, :commodities, :sectors, :state, :year, :datatype, :value) |>
-            x -> adjust_negative_values!(x, subset(x, :datatype => ByRow(==("value_added")))) |>
+            x -> select(x, :commodities, :sectors, :state, :year, :subtable, :value) |>
+            x -> adjust_negative_values!(x, subset(x, :subtable => ByRow(==("value_added")))) |>
             x -> adjust_negative_values!(x, subset(x, :sectors => ByRow(==("MCIF")))) #|>
             x -> subset(x, 
                 :commodities => ByRow(∉(marginal_goods)) 
         )
 
-    return WiNDCtable(df, [:commodities, :sectors, :state, :year], sets)
+    return NationalTable(df, sets)
 
 end
 
