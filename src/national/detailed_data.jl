@@ -118,6 +118,92 @@ end
 
 
 
+function load_detailed_national_year(use, supply, subtables, year::String)
+
+    detailed_use = use[year]["A6:PI417"] |>
+        X -> DataFrame(X[2:end, :], Symbol.(X[1, :])) |>
+        x -> select(x, Not(2)) |>
+        x -> rename(x, :Code => :commodities) |>
+        x -> stack(x, Not(:commodities), variable_name=:sectors, value_name=:value) |>
+        x -> dropmissing(x) |>
+        x -> subset(x, :value => ByRow(x -> x!=0)) |>
+        x -> transform(x, :commodities => ByRow(x -> (parse(Int, year),"use")) => [:year,:table])
+
+    insurance_codes = [
+        "524113",
+        "5241XX",
+        "524200"
+    ]
+
+    detailed_supply = supply[year]["A6:OZ409"] |>
+        X -> DataFrame(X[2:end, :], Symbol.(X[1, :])) |>
+            x -> select(x, Not(2)) |>
+            x -> rename(x, :Code => :commodities) |>
+            x -> stack(x, Not(:commodities), variable_name=:sectors, value_name=:value) |>
+            x -> unstack(x, :sectors, :value) |>
+            x -> coalesce.(x, 0) |>
+            x -> transform(x, 
+                # adjust transport margins for transport sectors according to CIF/FOP 
+                # adjustments. Insurance imports are specified as net of adjustments.
+            [:commodities, :TRANS, :MADJ] => ByRow((c,t,f) -> c∈insurance_codes ? t : t+f) => :TRANS,
+            [:commodities, :MCIF, :MADJ] => ByRow((c,i,f) -> c∈insurance_codes ? i+f : i) => :MCIF,
+            ) |>
+            x -> select(x, Not(:MADJ)) |>
+                x -> stack(x, Not(:commodities), variable_name = :sectors, value_name = :value) |>
+            x -> dropmissing(x) |>
+            x -> subset(x, :value => ByRow(x -> x!=0)) |>
+            x -> transform(x, :commodities => ByRow(x -> (parse(Int,year),"supply")) => [:year,:table])
+
+
+    return vcat(
+        detailed_use,
+        detailed_supply
+    ) |>
+    x -> transform(x,
+        [:commodities, :sectors] .=> ByRow(x -> string(x)) .=> [:commodities, :sectors]
+    ) |>
+    x -> innerjoin(
+        x,
+        subtables,
+        on = [:commodities, :sectors, :table]
+    ) |>
+    x -> select(x, :commodities, :sectors, :year, :subtable, :value) |>
+    x -> transform(x, :value => ByRow(x -> x*1e-3) => :value) |>
+    x -> unstack(x, :subtable, :value) |>
+    x -> coalesce.(x,0) |>
+    x -> transform(x, 
+        [:intermediate_demand, :intermediate_supply] => ByRow(
+            (d,s) -> (max(0, d - min(0, s)), max(0, s - min(0, d)))) => [:intermediate_demand, :intermediate_supply], #negative flows are reversed
+        :subsidies => ByRow(y -> -y) => :subsidies,
+        :margin_demand => ByRow(y ->  max(0,y)) => :margin_demand,
+        :margin_supply => ByRow(y -> -min(0,y)) => :margin_supply,
+        :personal_consumption => ByRow(y -> max(0,y)) => :personal_consumption,
+        :household_supply => ByRow(y -> -min(0,y)) => :household_supply,
+    ) |>
+    x -> stack(x, Not(:commodities, :sectors, :year), variable_name = :subtable, value_name = :value) |>
+    x -> subset(x, :value => ByRow(!=(0)))
+end
+
+
+
+function national_tables(data_path::String)
+    use = XLSX.readxlsx(joinpath(data_path, "use_detailed.xlsx"))
+    supply = XLSX.readxlsx(joinpath(data_path, "supply_detailed.xlsx"))
+    
+    sets = WiNDC.create_national_detailed_sets(use["2017"], supply["2017"])
+    detailed_subtables = WiNDC.create_national_detailed_subtables(sets)
+    
+    tables = []
+    for year in ["2007","2012","2017"]
+        push!(tables, load_detailed_national_year(use, supply, detailed_subtables, year::String))
+    end
+
+
+
+    return NationalTable(vcat(tables...), sets)
+
+end
+
 
 
 
