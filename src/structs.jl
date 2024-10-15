@@ -51,7 +51,7 @@ function get_subtable(
         negative = false
     )
 
-    return get_subtable(data, subtable, [column])
+    return get_subtable(data, subtable, [column]) |>
         x -> rename(x, column => output) |>
         x -> transform(x, output => ByRow(y -> negative ? -y : identity(y)) => output)
 end
