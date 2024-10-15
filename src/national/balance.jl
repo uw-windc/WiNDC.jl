@@ -1,6 +1,6 @@
 
 
-function zero_profit(data::WiNDCtable; column = :value, output = :zero_profit)
+function zero_profit(data::AbstractNationalTable; column = :value, output = :zero_profit)
 
     ag_columns = filter(y -> y!=:commodities, domain(data))
     return vcat(
@@ -13,7 +13,7 @@ function zero_profit(data::WiNDCtable; column = :value, output = :zero_profit)
 end
 
 
-function market_clearance(data::WiNDCtable; column = :value, output = :market_clearance) 
+function market_clearance(data::AbstractNationalTable; column = :value, output = :market_clearance) 
     ag_columns = filter(y -> y!=:sectors, domain(data))
 
         return vcat(
@@ -33,7 +33,7 @@ function market_clearance(data::WiNDCtable; column = :value, output = :market_cl
         x -> combine(x, output => (y -> sum(y;init=0)) => output)
 end
 
-margin_balance(data::WiNDCtable; column = :value, output = :margin_balance) =
+margin_balance(data::AbstractNationalTable; column = :value, output = :margin_balance) =
     vcat(
         WiNDC.get_subtable(data, "margin_supply", column = column, output = output, negative = true),
         WiNDC.get_subtable(data, "margin_demand", column = column, output = output)
