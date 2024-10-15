@@ -1,11 +1,11 @@
 
 """
-    calibrate(data::WiNDCtable)
+    calibrate(data::AbstractNationalTable)
 
 This is currently geared toward calibrating the national dataset.
 I'll be working to make this be a general calibration function.
 
-Returns a new WiNDCtable with the calibrated values and the model.
+Returns a new AbstractNationalTable with the calibrated values and the model.
 
 There are three primary balancing operations:
 
@@ -29,7 +29,7 @@ The following are fixed:
 Any zero values will remain zero. 
 
 """
-function calibrate(data::WiNDCtable)
+function calibrate(data::T) where T<:AbstractNationalTable
 
     
     M = Model(Ipopt.Optimizer)
@@ -201,6 +201,6 @@ function calibrate(data::WiNDCtable)
     get_table(data) |>
         x -> select!(x, Not(:variable))
 
-    return (NationalTable(df, data.sets), M)
+    return (T(df, data.sets), M)
 
 end
