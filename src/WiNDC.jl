@@ -23,4 +23,9 @@ include("national/balance.jl")
 
 export zero_profit, market_clearance, margin_balance
 
+include("national/detailed_data.jl")
+
+export create_national_detailed_sets, create_national_detailed_subtables
+
+
 end # module WiNDC
