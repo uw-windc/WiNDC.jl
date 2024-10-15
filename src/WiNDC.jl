@@ -11,9 +11,9 @@ include("national/structs.jl")
 
 export NationalTable
 
-include("national/national_data.jl")
+include("national/detailed_data.jl")
 
-export load_raw_national_summary_data
+export create_national_detailed_sets, create_national_detailed_subtables
 
 include("national/calibrate.jl")
 
@@ -23,9 +23,7 @@ include("national/balance.jl")
 
 export zero_profit, market_clearance, margin_balance
 
-include("national/detailed_data.jl")
 
-export create_national_detailed_sets, create_national_detailed_subtables
 
 
 end # module WiNDC
