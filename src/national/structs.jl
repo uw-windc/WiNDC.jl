@@ -12,7 +12,7 @@ end
 ## Aggregate Tables ##
 ######################
 
-gross_output(data::WiNDCtable; column::Symbol = :value, output::Symbol = :value) =
+gross_output(data::AbstractNationalTable; column::Symbol = :value, output::Symbol = :value) =
     vcat(
         get_subtable(data, "intermediate_supply", column = column, output = output),
         get_subtable(data, "household_supply", column = column, output = output),
@@ -22,7 +22,7 @@ gross_output(data::WiNDCtable; column::Symbol = :value, output::Symbol = :value)
     x -> combine(x, output => (y -> sum(y;init=0)) => output)
 
 
-armington_supply(data::WiNDCtable; column = :value, output = :value) = 
+armington_supply(data::AbstractNationalTable; column = :value, output = :value) = 
     vcat(
         get_subtable(data, "intermediate_demand", column = column, output = output),
         get_subtable(data, "exogenous_final_demand", column = column, output = output),
@@ -32,7 +32,7 @@ armington_supply(data::WiNDCtable; column = :value, output = :value) =
     x -> combine(x, output => (y -> sum(y;init=0)) => output)
 
 
-other_tax_rate(data::WiNDCtable; column = :value, output = :value) = 
+other_tax_rate(data::AbstractNationalTable; column = :value, output = :value) = 
     outerjoin(
         get_subtable(data, "intermediate_supply", column = column, output = :is) |>
             x -> groupby(x, filter(y -> y!=:commodities, domain(data))) |>
@@ -48,7 +48,7 @@ other_tax_rate(data::WiNDCtable; column = :value, output = :value) =
     x -> select(x, Not(:is,:ot))
 
 
-absorption_tax(data::WiNDCtable; column = :value, output = :value) = 
+absorption_tax(data::AbstractNationalTable; column = :value, output = :value) = 
     outerjoin(
         get_subtable(data, "tax", column = column, output = :tax) |>
             x -> select(x, Not(:sectors)),
@@ -62,7 +62,7 @@ absorption_tax(data::WiNDCtable; column = :value, output = :value) =
     ) |>
     x -> select(x, Not(:tax, :subsidies))
 
-absorption_tax_rate(data::WiNDCtable; column = :value, output = :value) =     
+absorption_tax_rate(data::AbstractNationalTable; column = :value, output = :value) =     
     outerjoin(
         absorption_tax(data; column = column, output = :total_tax),
         armington_supply(data; column = column, output = :arm_sup),
@@ -76,7 +76,7 @@ absorption_tax_rate(data::WiNDCtable; column = :value, output = :value) =
     x -> subset(x, output => ByRow(!=(0)))
 
 
-import_tariff_rate(data::WiNDCtable; column = :value, output = :value) = 
+import_tariff_rate(data::AbstractNationalTable; column = :value, output = :value) = 
     outerjoin(
         get_subtable(data, "duty", column = column, output = :duty) |>
             x -> select(x, Not(:sectors)),
@@ -92,7 +92,7 @@ import_tariff_rate(data::WiNDCtable; column = :value, output = :value) =
     x -> subset(x, output => ByRow(!=(0)))
 
 
-balance_of_payments(data::WiNDCtable; column = :value, output = :value) = 
+balance_of_payments(data::AbstractNationalTable; column = :value, output = :value) = 
     outerjoin(
         get_subtable(data, "imports", output = :im) |>
             x -> select(x, Not(:sectors)),
