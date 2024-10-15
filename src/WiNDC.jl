@@ -24,6 +24,4 @@ include("national/balance.jl")
 export zero_profit, market_clearance, margin_balance
 
 
-
-
 end # module WiNDC
