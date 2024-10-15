@@ -75,13 +75,13 @@ function calibrate(data::WiNDCtable)
 
 
     # Fix negative valued data to 0
-    get_table(data) |>
-        x -> subset(x,
-            :value => ByRow(y -> y < 0)
-        ) |>
-        x -> transform(x, 
-            [:value, :variable] => ByRow((val, var) -> fix(var, 0; force=true))
-        )
+    #get_table(data) |>
+    #    x -> subset(x,
+    #        :value => ByRow(y -> y < 0)
+    #    ) |>
+    #    x -> transform(x, 
+    #        [:value, :variable] => ByRow((val, var) -> fix(var, 0; force=true))
+    #    )
 
 
     @objective(
