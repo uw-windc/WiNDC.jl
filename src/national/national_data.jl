@@ -1,30 +1,30 @@
 """
     adjust_negative_values!(data::DataFrame, df::DataFrame)
 
-Adjusts negative values in a DataFrame by calculating the share of the value of a commodity in a sector and state
-relative to the total value of the sector and state. The share is then multiplied by the total value to get the
-adjusted value.
+Adjusts negative values in a DataFrame by calculating the share of the value of 
+a commodity in a sector relative to the total value of the sector. The share is 
+then multiplied by the total value to get the adjusted value.
 """
 adjust_negative_values!(data::DataFrame, df::DataFrame) = 
     outerjoin(
         df |>
-            x -> groupby(x, [:sectors, :state]) |>
+            x -> groupby(x, [:sectors]) |>
             x -> combine(x, :value => sum => :total_value),
 
         df |>
-            x -> groupby(x, [:commodities, :sectors, :state]) |>
+            x -> groupby(x, [:commodities, :sectors]) |>
             x -> combine(x, :value => sum => :commodity_value),
 
         df |>
-            x -> groupby(x, [:year, :sectors, :state]) |>
+            x -> groupby(x, [:year, :sectors]) |>
             x -> combine(x, :value => sum => :va_value),
-        on = [:sectors, :state]
+        on = [:sectors]
     ) |>
     x -> transform(x,
         [:total_value, :commodity_value, :va_value] => ByRow((t,c,v) -> t == 0 ? 0 : (c*v)/t) => :value
     ) |>
-    x -> select(x, :commodities, :sectors, :state, :year, :value)  |>
-    x -> leftjoin!(data, x, on = [:commodities, :sectors, :state, :year], makeunique=true) |>
+    x -> select(x, :commodities, :sectors, :year, :value)  |>
+    x -> leftjoin!(data, x, on = [:commodities, :sectors, :year], makeunique=true) |>
     x -> transform!(x,
         [:value, :value_1] => ByRow((v0,v1) -> ismissing(v1) || v0 >0 ? v0 : v1) => :value
     ) |>
@@ -69,9 +69,9 @@ function load_raw_national_summary_data(raw_data_directory)
             [:commodities, :MCIF, :MADJ] => ByRow((c,i,f) -> c==insurance_code ? i+f : i) => :MCIF,
         ) |>
         x -> select(x, Not(:MADJ)) |>
-        x -> stack(x, Not(:commodities, :state, :year,:table), variable_name = :sectors, value_name = :value) |>
+        x -> stack(x, Not(:commodities, :year,:table), variable_name = :sectors, value_name = :value) |>
         x -> subset(x, :value => ByRow(!=(0))) |>
-        x -> select(x, :commodities, :sectors, :state, :year, :table, :value)
+        x -> select(x, :commodities, :sectors, :year, :table, :value)
 
     sets = CSV.read(
         joinpath(raw_data_directory, data_path, "sets_summary.csv"), 
@@ -84,7 +84,7 @@ function load_raw_national_summary_data(raw_data_directory)
 
     df = vcat(use, supply) |> 
             x -> innerjoin(x, subtables, on = [:commodities, :sectors, :table]) |>
-            x -> select(x, :commodities, :sectors, :state, :year, :subtable, :value) |>
+            x -> select(x, :commodities, :sectors, :year, :subtable, :value) |>
             x -> unstack(x, :subtable, :value) |>
             x -> coalesce.(x, 0) |>
             x -> transform(x,
@@ -96,14 +96,14 @@ function load_raw_national_summary_data(raw_data_directory)
                 :personal_consumption => ByRow(y -> max(0,y)) => :personal_consumption,
                 :household_supply => ByRow(y -> -min(0,y)) => :household_supply,
             ) |>
-            x -> stack(x, Not(:commodities, :sectors, :state, :year), variable_name = :subtable, value_name = :value) |>
+            x -> stack(x, Not(:commodities, :sectors, :year), variable_name = :subtable, value_name = :value) |>
             x -> subset(x, :value => ByRow(!=(0))) |>
-            x -> select(x, :commodities, :sectors, :state, :year, :subtable, :value) |>
+            x -> select(x, :commodities, :sectors, :year, :subtable, :value) |>
             x -> adjust_negative_values!(x, subset(x, :subtable => ByRow(==("value_added")))) |>
             x -> adjust_negative_values!(x, subset(x, :sectors => ByRow(==("MCIF")))) #|>
             x -> subset(x, 
                 :commodities => ByRow(∉(marginal_goods)) 
-        )
+            )
 
     return NationalTable(df, sets)
 
@@ -171,7 +171,6 @@ function __load_year_io_table(
                 x -> transform(x,
                     :value => (y -> y/scale) => :value,
                     [:commodities,:sectors] .=> ByRow(string) .=> [:commodities,:sectors],
-                    :commodities => ByRow(y -> "national") => :state,
                     :commodities => ByRow(y -> int_year) => :year
                 )
 end
