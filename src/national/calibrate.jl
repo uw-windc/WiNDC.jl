@@ -35,32 +35,39 @@ function calibrate(data::WiNDCtable)
     M = Model(Ipopt.Optimizer)
 
     @variable(M, 
-        x[1:size(all_data(data),1)]
+        x[1:size(get_table(data),1)]
     )
 
 
     # Attach variables to dataframe
-    all_data(data) |>
+    get_table(data) |>
     x -> transform!(x,
         :value => (y -> M[:x]) => :variable
     )
 
     lob = .01
-    upb = 10
+    upb = 100
 
     # set bounds and start values
-    for row in eachrow(all_data(data))
-        set_lower_bound(row[:variable], max(0,row[:value]*lob))
-        set_upper_bound(row[:variable], abs(row[:value]*upb))
+    for row in eachrow(get_table(data))
         set_start_value(row[:variable], row[:value])
+        lower_bound = row[:value]>0 ? row[:value]*lob : row[:value]*upb
+        upper_bound = row[:value]>0 ? row[:value]*upb : row[:value]*lob
+        set_lower_bound(row[:variable], lower_bound)
+        set_upper_bound(row[:variable], upper_bound)
+        if row[:value] == 0
+            fix(row[:variable], 0; force=true)
+        end
     end
 
 
     # Fix certain parameters -- exogenous portions of final demand,
     # value added, imports, exports and household supply
     vcat(
-        imports(data; return_cols = [:value, :variable]),
-        exports(data; return_cols = [:value, :variable])
+        get_subtable(data, "imports", [:value, :variable]),
+        get_subtable(data, "exports", [:value, :variable]),
+        get_subtable(data, "labor_demand", [:value, :variable]),
+        get_subtable(data, "household_supply", [:value, :variable]),
     ) |>
     x -> transform(x,
         [:value, :variable] => ByRow((val, var) -> fix(var, val; force=true))
@@ -68,7 +75,7 @@ function calibrate(data::WiNDCtable)
 
 
     # Fix negative valued data to 0
-    all_data(data) |>
+    get_table(data) |>
         x -> subset(x,
             :value => ByRow(y -> y < 0)
         ) |>
@@ -77,20 +84,10 @@ function calibrate(data::WiNDCtable)
         )
 
 
-    # Fix labor compensation to target NIPA table totals
-    value_added(data) |>
-        x -> subset(x,
-            :commodities => ByRow(==("V001"))
-        ) |>
-        x -> transform(x, 
-            [:value, :variable] => ByRow((val, var) -> fix(var, val; force=true))
-        )
-
-
     @objective(
         M, 
         Min, 
-        all_data(data) |> 
+        get_table(data) |> 
             x -> transform(x,
                 [:value, :variable] => ByRow((val, var) -> 
                     abs(val) * (var/val - 1)^2) => :objective
@@ -116,57 +113,57 @@ function calibrate(data::WiNDCtable)
         margin_balance[i=1:size(x,1)],
         x[i,:margin_balance] == 0
     )
-
-    marginal_goods = ["441","445","452"]
+    
     
     # Bound gross output
     outerjoin(
         gross_output(data; column = :variable, output = :expr),
         gross_output(data; column = :value),
-        on = [:commodities, :state, :year]
+        on = [:commodities, :year]
     ) |> 
     x -> transform(x,
-        [:commodities, :value] => ByRow((c,v) -> c∈marginal_goods ? 0 : max(0,lob*v)) => :lower,
-        [:commodities, :value] => ByRow((c,v) -> c∈marginal_goods ? 0 : abs(upb*v)) => :upper,
+            :value => ByRow(v -> v>0 ? floor(lob*v)-5 : upb*v) => :lower, 
+            :value => ByRow(v -> v>0 ? upb*v : ceil(lob*v)+5) => :upper, 
     )|>
     x -> @constraint(M,
         gross_output[i=1:size(x,1)],
         x[i,:lower] <= x[i,:expr] <= x[i,:upper]
     )
-    
-
+        
     
     # Bound armington supply
     outerjoin(
         armington_supply(data; column = :variable, output = :expr),
         armington_supply(data; column = :value),
-        on = [:commodities, :state, :year]
+        on = [:commodities, :year]
     ) |>
     x -> @constraint(M,
         armington_supply[i=1:size(x,1)],
         max(0,lob * x[i,:value]) <= x[i,:expr] <= abs(upb * x[i,:value])
     )
     
+    
     # Fix tax rates
     outerjoin(
-        output_tax(data, column = :variable, output = :output),
-        intermediate_supply(data) |>
-            x -> groupby(x, [:sectors, :state, :year]) |>
-            x -> combine(x, :variable => sum => :id),
-        output_tax_rate(data, column = :value, output = :otr),
-        on = [:sectors, :state, :year]
+        get_subtable(data, "intermediate_supply", column = :variable, output = :is) |>
+            x -> groupby(x, filter(y -> y!=:commodities, domain(data))) |>
+            x -> combine(x, :is => sum => :is),
+        get_subtable(data, "other_tax", column = :variable, output = :ot) |>
+            x -> select(x, Not(:commodities)),
+        other_tax_rate(data, column = :value, output = :otr),
+        on = filter(y -> y!=:commodities, domain(data))
     ) |>
     x -> dropmissing(x) |>
     x -> @constraint(M, 
         Output_Tax_Rate[i=1:size(x,1)],
-        x[i,:output] == x[i,:id] * x[i,:otr]
+        x[i,:ot] == x[i,:is] * x[i,:otr]
     )
     
     outerjoin(
         absorption_tax(data, column = :variable, output = :at),
         armington_supply(data, column = :variable, output = :as),
         absorption_tax_rate(data, output = :atr),
-        on = [:commodities, :state, :year]
+        on = filter(y -> y!=:sectors, domain(data))
     ) |>
     x -> dropmissing(x) |>
     x -> @constraint(M,
@@ -175,31 +172,35 @@ function calibrate(data::WiNDCtable)
     )
     
     outerjoin(
-        import_tariff(data, column = :variable, output = :it),
-        imports(data, column = :variable, output = :imports),
+        get_subtable(data, "duty", column = :variable, output = :it) |>
+            x -> select(x, Not(:sectors)),
+        get_subtable(data, "imports", column = :variable, output = :imports) |>
+            x -> select(x, Not(:sectors)),
         import_tariff_rate(data, output = :itr),
-        on = [:commodities, :state, :year]
+        on = filter(y -> y!=:sectors, domain(data))
     ) |>
     x -> dropmissing(x) |>
     x -> @constraint(M,
         Import_Tariff_Rate[i=1:size(x,1)],
         x[i,:it] == x[i,:imports] * x[i,:itr]
     )
+    
+
 
     optimize!(M)
 
     @assert is_solved_and_feasible(M) "Error: The model was not solved to optimality."
 
-    df = all_data(data) |>
+    df = get_table(data) |>
         x -> transform(x,
             :variable => ByRow(value) => :value
         ) |>
         x -> select(x, Not(:variable))
 
 
-    all_data(data) |>
+    get_table(data) |>
         x -> select!(x, Not(:variable))
 
-    return (WiNDCtable(df, domain(data), data.sets), M)
+    return (NationalTable(df, data.sets), M)
 
 end
