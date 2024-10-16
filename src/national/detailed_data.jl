@@ -1,11 +1,36 @@
 """
-    create_national_detailed_sets(use::XLSX.Worksheet, supply::XLSX.Worksheet)
+    create_national_sets(
+        use::XLSX.Worksheet, 
+        supply::XLSX.Worksheet,
+        set_regions)
 
 This function creates the sets for the detailed national data.
+
+set regions for detailed table
+
+    Dict(
+        "commodities" => ("use", ["A7:B408"], false),
+        "labor_demand" => ("use", ["A410:B410"], false),
+        "other_tax" => ("use", ["A411:B411"], false),
+        "capital_demand" => ("use", ["A412:B412"], false),
+        "sectors" => ("use", ["C5:ON6"], true),
+        "personal_consumption" => ("use", ["OP5:OP6"], true),
+        "household_supply" => ("use", ["OP5:OP6"], true),
+        "exports" => ("use", ["OV5:OV6"], true),
+        "exogenous_final_demand" => ("use", ["OQ5:OU6","OW5:PH6"], true),
+        "imports" => ("supply", ["OP5:OP6"], true),
+        "margin_demand" => ("supply", ["OS5:OT6"], true),
+        "margin_supply" => ("supply", ["OS5:OT6"], true),
+        "duty" => ("supply", ["OV5:OV6"], true),
+        "tax" => ("supply", ["OW5:OW6"], true),
+        "subsidies" => ("supply", ["OX5:OX6"], true)
+    )
 """
-function create_national_detailed_sets(use::XLSX.Worksheet, supply::XLSX.Worksheet)
-
-
+function create_national_sets(
+        use::XLSX.Worksheet, 
+        supply::XLSX.Worksheet,
+        set_regions;
+        table_type = :detailed)
 
     aggregate_sets = DataFrame(
         [
@@ -34,41 +59,37 @@ function create_national_detailed_sets(use::XLSX.Worksheet, supply::XLSX.Workshe
     [:element, :description, :set]
     )
 
+    S = [aggregate_sets]
+    for (key, (sheet, range, flip)) in set_regions
+        if sheet == "use"
+            table = use
+        else
+            table= supply
+        end
+        if flip
+            region = hcat([table[x] for x in range]...)
+            region = permutedims(region, (2,1))
+            if table_type == :detailed
+                region[:,1], region[:,2] = region[:,2], region[:,1]
+            end
+        else
+            region = vcat([table[x] for x in range]...)
+        end
+        df = DataFrame(region, [:element, :description]) |>
+            x -> transform!(x, :element => ByRow(x -> key) => :set)
+        push!(S, df)
+    end
+
     return vcat(
-        aggregate_sets,
-        DataFrame(use["A7:B408"], [:element, :description])|>
-            x -> transform(x, :element => ByRow(x -> "commodities") => :set),
-        DataFrame(use["A410:B410"], [:element, :description]) |>
-            x -> transform(x, :element => ByRow(x -> "labor_demand") => :set),
-        DataFrame(use["A411:B411"], [:element, :description]) |>
-            x -> transform(x, :element => ByRow(x -> "other_tax") => :set),
-        DataFrame(use["A412:B412"], [:element, :description]) |>
-            x -> transform(x, :element => ByRow(x -> "capital_demand") => :set),
-        DataFrame(permutedims(use["C5:ON6"], (2,1)), [:description, :element])|>
-            x -> transform(x, :element => ByRow(x -> "sectors") => :set),
-        DataFrame(permutedims(use["OP5:OP6"], (2,1)), [:description, :element]) |>
-            x -> transform(x, :element => ByRow(x -> "personal_consumption") => :set),
-        DataFrame(permutedims(use["OP5:OP6"], (2,1)), [:description, :element]) |>
-            x -> transform(x, :element => ByRow(x -> "household_supply") => :set),
-        DataFrame(permutedims(use["OQ5:PH6"], (2,1)), [:description, :element]) |>
-            x -> transform(x, :element => ByRow(x -> x== "F04000" ? "exports" : "exogenous_final_demand") => :set),
-        DataFrame(permutedims(supply["OP5:OP6"], (2,1)), [:description, :element]) |>
-            x -> transform(x, :element => ByRow(x -> "imports") => :set),
-        DataFrame(permutedims(supply["OS5:OT6"], (2,1)), [:description, :element]) |>
-            x -> transform(x, :element => ByRow(x -> "margin_demand") => :set),
-        DataFrame(permutedims(supply["OS5:OT6"], (2,1)), [:description, :element]) |>
-            x -> transform(x, :element => ByRow(x -> "margin_supply") => :set),
-        DataFrame(permutedims(supply["OV5:OV6"], (2,1)), [:description, :element]) |>
-            x -> transform(x, :element => ByRow(x -> "duty") => :set),
-        DataFrame(permutedims(supply["OW5:OW6"], (2,1)), [:description, :element]) |>
-            x -> transform(x, :element => ByRow(x -> "tax") => :set),
-        DataFrame(permutedims(supply["OX5:OX6"], (2,1)), [:description, :element]) |>
-        x -> transform(x, :element => ByRow(x -> "subsidies") => :set)
-    ) |>
-    x -> transform(x,
-        [:element, :set] .=> ByRow(x -> string(x)) .=> [:element, :set]
-    )
+            S...
+        ) |>
+        x -> transform(x,
+            [:element, :set] .=> ByRow(x -> string(x)) .=> [:element, :set]
+        )
 end
+
+
+
 
 
 """
@@ -91,11 +112,11 @@ function make_subtable(sets, rows, columns, table, subtable)
 end
 
 """
-    create_national_detailed_subtables(sets)
+    create_national_subtables(sets)
 
 This function creates the subtables for the detailed national data.
 """
-function create_national_detailed_subtables(sets)
+function create_national_subtables(sets)
     return vcat(
         make_subtable(sets, "commodities", "sectors", "use", "intermediate_demand"),
         make_subtable(sets, "labor_demand", "sectors", "use", "labor_demand"),
@@ -117,42 +138,85 @@ function create_national_detailed_subtables(sets)
 end
 
 
+function load_national_year(
+            X::XLSX.XLSXFile,
+            year,
+            range,
+            table_name::String;
+            scale = 1_000,
+            replace_missing = false,
+            data_start_row = 2)
 
-function load_detailed_national_year(use, supply, subtables, year::String)
+    U = X[year][range]
 
-    detailed_use = use[year]["A6:PI417"] |>
-        X -> DataFrame(X[2:end, :], Symbol.(X[1, :])) |>
-        x -> select(x, Not(2)) |>
-        x -> rename(x, :Code => :commodities) |>
-        x -> stack(x, Not(:commodities), variable_name=:sectors, value_name=:value) |>
+    U[1,1] = :commodities
+    U[1,2] = :drop
+
+    if replace_missing
+        U[U.=="..."] .= missing
+    end
+
+    return DataFrame(U[data_start_row:end,1:end], string.(U[1,:])) |>
+                    x -> select(x, Not(:drop)) |>
+                    x -> stack(x, Not("commodities"), variable_name = :sectors) |>
+                    x -> coalesce.(x, 0) |>
+                    x -> subset(x,
+                        :value => ByRow(!=(0))
+                    ) |>
+                    x -> transform(x,
+                        :value => (y -> y/scale) => :value,
+                        [:commodities,:sectors] .=> ByRow(string) .=> [:commodities,:sectors],
+                        :commodities => ByRow(y -> parse(Int, year)) => :year,
+                        :commodities => ByRow(y -> table_name) => :table
+                    )
+end
+
+function load_national_tables(
+            use, 
+            supply, 
+            subtables, 
+            year::String;
+            table_type = :detailed,
+            use_range = "A6:PI417",
+            supply_range = "A6:OZ409"
+        )
+
+    insurance_codes = table_type == :detailed ? ["524113","5241XX","524200"] : ["524"]    
+    replace_missing = table_type != :detailed
+    data_start_row = table_type == :detailed ? 2 : 3
+
+
+    detailed_use = load_national_year(
+        use,
+        year,
+        use_range,
+        "use";
+        replace_missing = replace_missing,
+        data_start_row = data_start_row
+    )
+
+    trans_col = table_type == :detailed ? :TRANS : :Trans
+
+    detailed_supply = WiNDC.load_national_year(
+            supply,
+            year,
+            supply_range,
+            "supply";
+            replace_missing = replace_missing,
+            data_start_row = data_start_row
+        ) |>
+        x -> unstack(x, :sectors, :value) |>
+        x -> coalesce.(x, 0) |>
+        x -> transform(x, 
+            # adjust transport margins for transport sectors according to CIF/FOP 
+            # adjustments. Insurance imports are specified as net of adjustments.
+        [:commodities, trans_col, :MADJ] => ByRow((c,t,f) -> c∈insurance_codes ? t : t+f) => :trans_col,
+        [:commodities, :MCIF, :MADJ] => ByRow((c,i,f) -> c∈insurance_codes ? i+f : i) => :MCIF,
+        ) |>
+        x -> select(x, Not(:MADJ)) |>
+            x -> stack(x, Not(:commodities, :year,:table), variable_name = :sectors, value_name = :value) |>
         x -> dropmissing(x) |>
-        x -> subset(x, :value => ByRow(x -> x!=0)) |>
-        x -> transform(x, :commodities => ByRow(x -> (parse(Int, year),"use")) => [:year,:table])
-
-    insurance_codes = [
-        "524113",
-        "5241XX",
-        "524200"
-    ]
-
-    detailed_supply = supply[year]["A6:OZ409"] |>
-        X -> DataFrame(X[2:end, :], Symbol.(X[1, :])) |>
-            x -> select(x, Not(2)) |>
-            x -> rename(x, :Code => :commodities) |>
-            x -> stack(x, Not(:commodities), variable_name=:sectors, value_name=:value) |>
-            x -> unstack(x, :sectors, :value) |>
-            x -> coalesce.(x, 0) |>
-            x -> transform(x, 
-                # adjust transport margins for transport sectors according to CIF/FOP 
-                # adjustments. Insurance imports are specified as net of adjustments.
-            [:commodities, :TRANS, :MADJ] => ByRow((c,t,f) -> c∈insurance_codes ? t : t+f) => :TRANS,
-            [:commodities, :MCIF, :MADJ] => ByRow((c,i,f) -> c∈insurance_codes ? i+f : i) => :MCIF,
-            ) |>
-            x -> select(x, Not(:MADJ)) |>
-                x -> stack(x, Not(:commodities), variable_name = :sectors, value_name = :value) |>
-            x -> dropmissing(x) |>
-            x -> subset(x, :value => ByRow(x -> x!=0)) |>
-            x -> transform(x, :commodities => ByRow(x -> (parse(Int,year),"supply")) => [:year,:table])
+        x -> subset(x, :value => ByRow(x -> x!=0)) 
 
 
     return vcat(
@@ -186,43 +250,108 @@ end
 
 
 
-function national_tables(data_path::String)
+function load_detailed_national_tables(data_path::String)
     use = XLSX.readxlsx(joinpath(data_path, "use_detailed.xlsx"))
     supply = XLSX.readxlsx(joinpath(data_path, "supply_detailed.xlsx"))
     
-    sets = WiNDC.create_national_detailed_sets(use["2017"], supply["2017"])
-    detailed_subtables = WiNDC.create_national_detailed_subtables(sets)
+
+    detailed_sets = Dict(
+        "commodities" => ("use", ["A7:B408"], false),
+        "labor_demand" => ("use", ["A410:B410"], false),
+        "other_tax" => ("use", ["A411:B411"], false),
+        "capital_demand" => ("use", ["A412:B412"], false),
+        "sectors" => ("use", ["C5:ON6"], true),
+        "personal_consumption" => ("use", ["OP5:OP6"], true),
+        "household_supply" => ("use", ["OP5:OP6"], true),
+        "exports" => ("use", ["OV5:OV6"], true),
+        "exogenous_final_demand" => ("use", ["OQ5:OU6","OW5:PH6"], true),
+        "imports" => ("supply", ["OP5:OP6"], true),
+        "margin_demand" => ("supply", ["OS5:OT6"], true),
+        "margin_supply" => ("supply", ["OS5:OT6"], true),
+        "duty" => ("supply", ["OV5:OV6"], true),
+        "tax" => ("supply", ["OW5:OW6"], true),
+        "subsidies" => ("supply", ["OX5:OX6"], true)
+    )
+
+    sets = WiNDC.create_national_sets(use["2017"], supply["2017"], detailed_sets)
+    detailed_subtables = WiNDC.create_national_subtables(sets)
     
     tables = []
     for year in ["2007","2012","2017"]
-        push!(tables, load_detailed_national_year(use, supply, detailed_subtables, year::String))
+        push!(
+            tables, 
+            load_national_tables(
+                use, 
+                supply, 
+                detailed_subtables, 
+                year::String
+            )
+        )
     end
-
-
 
     return NationalTable(vcat(tables...), sets)
 
 end
 
 
+function load_summary_national_tables(data_path::String)
+    summary_use = XLSX.readxlsx(joinpath(data_path, "use_summary.xlsx"))
+    summary_supply = XLSX.readxlsx(joinpath(data_path, "supply_summary.xlsx"))
+    
+
+    summary_set_regions = Dict(
+        "commodities" => ("use", ["A8:B80"], false),
+        "labor_demand" => ("use", ["A82:B82"], false),
+        "other_tax" => ("use", ["A83:B83"], false),
+        "capital_demand" => ("use", ["A85:B85"], false),
+        "sectors" => ("use", ["C6:BU7"], true),
+        "personal_consumption" => ("use", ["BW6:BW7"], true),
+        "household_supply" => ("use", ["BW6:BW7"], true),
+        "exports" => ("use", ["CC6:CC7"], true),
+        "exogenous_final_demand" => ("use", ["BX6:CB7","CD6:CO7"], true),
+        "imports" => ("supply", ["BW6:BW7"], true),
+        "margin_demand" => ("supply", ["BZ6:CA7"], true),
+        "margin_supply" => ("supply", ["BZ6:CA7"], true),
+        "duty" => ("supply", ["CC6:CC7"], true),
+        "tax" => ("supply", ["CD6:CD7"], true),
+        "subsidies" => ("supply", ["CE6:CE7"], true)
+    )
+
+    summary_sets = WiNDC.create_national_sets(summary_use["2017"], summary_supply["2017"], summary_set_regions; table_type=:summary)
+    summary_subtables = WiNDC.create_national_subtables(summary_sets)
+    
+
+    summary_tables = []
+    for year in XLSX.sheetnames(summary_use)
+        push!(
+            summary_tables, 
+            load_national_tables(
+                summary_use, 
+                summary_supply, 
+                summary_subtables, 
+                year;
+                table_type = :summary,
+                use_range = "A6:CP90",
+                supply_range = "A6:CG81"
+            )
+        )
+    end
+
+    return NationalTable(vcat(summary_tables...), summary_sets)
+end
 
 
+function national_tables(data_path::String; aggregation = :detailed)
+    
+    if aggregation == :summary
+        return load_summary_national_tables(data_path)
+    end
 
+    detailed = load_detailed_national_tables(data_path)
 
+    return detailed
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+end
 
 
 
