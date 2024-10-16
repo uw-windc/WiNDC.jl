@@ -232,7 +232,6 @@ function load_national_tables(
         on = [:commodities, :sectors, :table]
     ) |>
     x -> select(x, :commodities, :sectors, :year, :subtable, :value) |>
-    x -> transform(x, :value => ByRow(x -> x*1e-3) => :value) |>
     x -> unstack(x, :subtable, :value) |>
     x -> coalesce.(x,0) |>
     x -> transform(x, 
@@ -277,7 +276,7 @@ function load_detailed_national_tables(data_path::String)
     detailed_subtables = WiNDC.create_national_subtables(sets)
     
     tables = []
-    for year in ["2007","2012","2017"]
+    for year in [f for f in XLSX.sheetnames(use) if f!="NAICS Codes"]
         push!(
             tables, 
             load_national_tables(
@@ -347,11 +346,115 @@ function national_tables(data_path::String; aggregation = :detailed)
         return load_summary_national_tables(data_path)
     end
 
+    summary = load_summary_national_tables(data_path)
     detailed = load_detailed_national_tables(data_path)
+    summary_map = detailed_summary_map(data_path)
 
-    return detailed
+    return (summary, detailed, summary_map)
 
 end
 
 
+############################
+#### Disagregation Code ####
+############################
+"""
+    down_fill(X)
+
+This function fills in the missing values in a column with the last non-missing value.
+"""
+function down_fill(X)
+    output = Vector{Any}()
+    current_value = X[1]
+    for row in X
+        if !ismissing(row)
+            current_value = row
+        end
+        push!(output, current_value)
+    end
+    return output
+end
+
+"""
+    detailed_summary_map(detailed_path)
+
+This function reads the detailed table and returns a DataFrame that maps the detailed
+sectors to the summary sectors. The first sheet of the detailed table is a map between
+the detailed sectors and the summary sectors. In addition this maps value added, final
+demand and supply extras to the summary sectors.
+"""
+function detailed_summary_map(detailed_path::String)
+
+    detailed_xlsx = XLSX.readdata(joinpath(detailed_path,"use_detailed.xlsx"), "NAICS Codes", "B5:E1022")
+
+    df = detailed_xlsx |>
+        x -> DataFrame(x[4:end,:], [x[1,1:end-1]..., "description"]) |>
+        x -> select(x, Not("U.Summary")) |>
+        x -> transform(x,
+            :Summary => down_fill => :Summary,
+            :Detail => down_fill => :Detail
+        ) |>
+        x -> dropmissing(x) |>
+        x -> rename(x, :Summary => :summary, :Detail => :detailed) |>
+        x -> transform(x,
+            [:summary,:detailed] .=> ByRow(string) .=> [:summary,:detailed]
+        )
+
+        df = vcat(df, 
+            DataFrame([
+                (summary = "T00OTOP", detailed = "T00OTOP", description = "Other taxes on production"),
+                (summary = "V003", detailed = "V00300", description = "Gross operating surplus"),
+                (summary = "V001", detailed = "V00100", description = "Compensation of employees"),
+                (summary = "F010", detailed = "F01000", description = "Personal consumption expenditures"),
+                (summary = "F02E", detailed = "F02E00", description = "Nonresidential private fixed investment in equipment"),
+                (summary = "F02N", detailed = "F02N00", description = "Nonresidential private fixed investment in intellectual property products"),
+                (summary = "F02R", detailed = "F02R00", description = "Residential private fixed investment"),
+                (summary = "F02S", detailed = "F02S00", description = "Nonresidential private fixed investment in structures"),
+                (summary = "F030", detailed = "F03000", description = "Change in private inventories"),
+                (summary = "F040", detailed = "F04000", description = "Exports of goods and services"),
+                (summary = "F06C", detailed = "F06C00", description = "National defense: Consumption expenditures"),
+                (summary = "F06E", detailed = "F06E00", description = "Federal national defense: Gross investment in equipment"),
+                (summary = "F06N", detailed = "F06N00", description = "Federal national defense: Gross investment in intellectual property products"),
+                (summary = "F06S", detailed = "F06S00", description = "Federal national defense: Gross investment in structures"),
+                (summary = "F07C", detailed = "F07C00", description = "Nondefense: Consumption expenditures"),
+                (summary = "F07E", detailed = "F07E00", description = "Federal nondefense: Gross investment in equipment"),
+                (summary = "F07N", detailed = "F07N00", description = "Federal nondefense: Gross investment in intellectual property products"),
+                (summary = "F07S", detailed = "F07S00", description = "Federal nondefense: Gross investment in structures"),
+                (summary = "F10C", detailed = "F10C00", description = "State and local government consumption expenditures"),
+                (summary = "F10E", detailed = "F10E00", description = "State and local: Gross investment in equipment"),
+                (summary = "F10N", detailed = "F10N00", description = "State and local: Gross investment in intellectual property products"),
+                (summary = "F10S", detailed = "F10S00", description = "State and local: Gross investment in structures"),
+                (summary = "MCIF", detailed = "MCIF", description = "Imports"),
+                (summary = "MADJ", detailed = "MADJ", description = "CIF/FOB Adjustments on Imports"),
+                (summary = "Trade", detailed = "TRADE ", description = "Trade margins"),
+                (summary = "Trans", detailed = "TRANS", description = "Transport margins"),
+                (summary = "MDTY", detailed = "MDTY", description = "Import duties"),
+                (summary = "TOP", detailed = "TOP", description = "Tax on products"),
+                (summary = "SUB", detailed = "SUB", description = "Subsidies on products"),
+                ])
+        )
+    return df
+end
+
+
+
+
+"""
+    weight_function(year_detail, year_summary, minimum_detail, maximum_detail)
+
+Create the weight function for the interpolation of the detailed table to the summary table
+based solely on the year.
+"""
+function weight_function(year_detail::Int, year_summary::Int, minimum_detail::Int, maximum_detail::Int)
+    if year_detail == minimum_detail && year_summary < year_detail
+        return 1
+    elseif year_detail == maximum_detail && year_summary > year_detail
+        return 1
+    elseif abs(year_detail.-year_summary) < 5
+        return 1 .-abs.(year_detail.-year_summary)/5
+    else
+        return 0
+    
+    end
+end
 
