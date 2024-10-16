@@ -67,9 +67,6 @@ function national_mpsge(data::NationalTable)
             end)
         end
 
-
-    
-
     get_subtable(data, "margin_supply", output = :ms) |>
         x -> groupby(x, :sectors) |>
         x -> for (key, df) in pairs(x)
@@ -79,8 +76,7 @@ function national_mpsge(data::NationalTable)
                 [@input(PY[row[:commodities]], row[:ms], s) for row∈eachrow(df) if row[:ms]!=0]...
             end)
         end
-
-
+        
     outerjoin(
         WiNDC.armington_supply(data; output = :as),
         get_subtable(data, "exports", output = :ex) |>
