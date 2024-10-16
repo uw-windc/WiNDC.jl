@@ -342,15 +342,19 @@ end
 
 function national_tables(data_path::String; aggregation = :detailed)
     
+    @assert(aggregation∈[:summary,:detailed], "Error: aggregation must be either :summary or :detailed")
+
     if aggregation == :summary
         return load_summary_national_tables(data_path)
     end
 
-    summary = load_summary_national_tables(data_path)
-    detailed = load_detailed_national_tables(data_path)
-    summary_map = detailed_summary_map(data_path)
+    if aggregation == :detailed
+        summary = load_summary_national_tables(data_path)
+        detailed = load_detailed_national_tables(data_path)
+        summary_map = detailed_summary_map(data_path)
 
-    return (summary, detailed, summary_map)
+        return national_disaggragate_summary_to_detailed(detailed, summary, summary_map)
+    end
 
 end
 
@@ -458,3 +462,45 @@ function weight_function(year_detail::Int, year_summary::Int, minimum_detail::In
     end
 end
 
+
+function national_disaggragate_summary_to_detailed(detailed, summary, summary_map)
+
+    min_detail_year = minimum(get_table(detailed)[!, :year])
+    max_detail_year = maximum(get_table(detailed)[!, :year])
+    
+    
+    detailed_value_share = get_table(detailed) |>
+        x -> leftjoin(x, summary_map[!,Not(:description)], on = :commodities => :detailed, renamecols = "" => "_commodities") |>
+        x -> leftjoin(x, summary_map[!,Not(:description)], on = :sectors => :detailed, renamecols = "" => "_sectors") |>
+        x -> innerjoin(
+            x, 
+            get_table(summary), 
+            on = [:summary_commodities => :commodities, :summary_sectors => :sectors, :year, :subtable],
+            renamecols = "" => "_summary"
+        ) |>
+        x -> transform(x,
+            [:value, :value_summary] => ((detail,summary) -> ifelse.(summary.!=0, detail./summary, 0)) => :value_share
+        ) |>
+        x -> select(x, :commodities, :summary_commodities, :sectors, :summary_sectors, :year, :subtable, :value_share)
+    
+
+    df = innerjoin(
+            detailed_value_share,
+            get_table(summary),
+            on = [:summary_commodities => :commodities, :summary_sectors => :sectors, :subtable],
+            renamecols = "" => "_summary"
+        ) |>
+        x -> transform(x,
+            [:year, :year_summary, :value_share, :value_summary] => 
+                ByRow((dy,y,share,summary) -> WiNDC.weight_function(dy,y,min_detail_year,max_detail_year)*share*summary) => 
+                :value
+        ) |>
+        x -> groupby(x, [:commodities, :sectors, :year_summary, :subtable]) |>
+        x -> combine(x, :value => sum => :value) |>
+        x -> rename(x, :year_summary => :year) |>
+        x -> subset(x, :value => ByRow(!=(0)))    
+
+
+    return NationalTable(df, detailed.sets)
+
+end
