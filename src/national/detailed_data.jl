@@ -342,10 +342,14 @@ end
 
 function national_tables(data_path::String; aggregation = :detailed)
     
-    @assert(aggregation∈[:summary,:detailed], "Error: aggregation must be either :summary or :detailed")
+    @assert(aggregation∈[:summary,:detailed,:raw_detailed], "Error: aggregation must be either :summary or :detailed")
 
     if aggregation == :summary
         return load_summary_national_tables(data_path)
+    end
+
+    if aggregation == :raw_detailed
+        return load_detailed_national_tables(data_path)
     end
 
     if aggregation == :detailed
@@ -467,22 +471,18 @@ function national_disaggragate_summary_to_detailed(detailed, summary, summary_ma
 
     min_detail_year = minimum(get_table(detailed)[!, :year])
     max_detail_year = maximum(get_table(detailed)[!, :year])
-    
-    
+
     detailed_value_share = get_table(detailed) |>
-        x -> leftjoin(x, summary_map[!,Not(:description)], on = :commodities => :detailed, renamecols = "" => "_commodities") |>
-        x -> leftjoin(x, summary_map[!,Not(:description)], on = :sectors => :detailed, renamecols = "" => "_sectors") |>
-        x -> innerjoin(
-            x, 
-            get_table(summary), 
-            on = [:summary_commodities => :commodities, :summary_sectors => :sectors, :year, :subtable],
-            renamecols = "" => "_summary"
-        ) |>
-        x -> transform(x,
-            [:value, :value_summary] => ((detail,summary) -> ifelse.(summary.!=0, detail./summary, 0)) => :value_share
+        x -> leftjoin(x, summary_map, on = :commodities => :detailed, renamecols = "" => "_commodities") |>
+        x -> leftjoin(x, summary_map, on = :sectors => :detailed, renamecols = "" => "_sectors") |>
+        x -> groupby(x, [:summary_sectors,:summary_commodities,:year, :subtable]) |>
+        x -> combine(x,
+            :value => (y -> y./sum(y)) => :value_share,
+            [:commodities, :sectors] .=> identity .=> [:commodities, :sectors]
         ) |>
         x -> select(x, :commodities, :summary_commodities, :sectors, :summary_sectors, :year, :subtable, :value_share)
     
+
 
     df = innerjoin(
             detailed_value_share,
