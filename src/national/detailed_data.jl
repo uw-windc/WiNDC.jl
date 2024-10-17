@@ -88,10 +88,6 @@ function create_national_sets(
         )
 end
 
-
-
-
-
 """
     make_subtable(sets, rows, columns, table, subtable)
 
@@ -443,8 +439,6 @@ function detailed_summary_map(detailed_path::String)
         )
     return df
 end
-
-
 
 
 """
