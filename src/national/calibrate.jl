@@ -29,10 +29,14 @@ The following are fixed:
 Any zero values will remain zero. 
 
 """
-function calibrate(data::T) where T<:AbstractNationalTable
+function calibrate(data::T; silent = false) where T<:AbstractNationalTable
 
     
     M = Model(Ipopt.Optimizer)
+
+    if silent
+        set_silent(M)
+    end
 
     @variable(M, 
         x[1:size(get_table(data),1)]
