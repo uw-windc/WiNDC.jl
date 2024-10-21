@@ -170,7 +170,6 @@ end
 function load_national_tables(
             use, 
             supply, 
-            subtables, 
             year::String;
             table_type = :detailed,
             use_range = "A6:PI417",
@@ -206,7 +205,7 @@ function load_national_tables(
         x -> transform(x, 
             # adjust transport margins for transport sectors according to CIF/FOP 
             # adjustments. Insurance imports are specified as net of adjustments.
-        [:commodities, trans_col, :MADJ] => ByRow((c,t,f) -> c∈insurance_codes ? t : t+f) => :trans_col,
+        [:commodities, trans_col, :MADJ] => ByRow((c,t,f) -> c∈insurance_codes ? t : t+f) => trans_col,
         [:commodities, :MCIF, :MADJ] => ByRow((c,i,f) -> c∈insurance_codes ? i+f : i) => :MCIF,
         ) |>
         x -> select(x, Not(:MADJ)) |>
@@ -221,26 +220,7 @@ function load_national_tables(
     ) |>
     x -> transform(x,
         [:commodities, :sectors] .=> ByRow(x -> string(x)) .=> [:commodities, :sectors]
-    ) |>
-    x -> innerjoin(
-        x,
-        subtables,
-        on = [:commodities, :sectors, :table]
-    ) |>
-    x -> select(x, :commodities, :sectors, :year, :subtable, :value) |>
-    x -> unstack(x, :subtable, :value) |>
-    x -> coalesce.(x,0) |>
-    x -> transform(x, 
-        [:intermediate_demand, :intermediate_supply] => ByRow(
-            (d,s) -> (max(0, d - min(0, s)), max(0, s - min(0, d)))) => [:intermediate_demand, :intermediate_supply], #negative flows are reversed
-        :subsidies => ByRow(y -> -y) => :subsidies,
-        :margin_demand => ByRow(y ->  max(0,y)) => :margin_demand,
-        :margin_supply => ByRow(y -> -min(0,y)) => :margin_supply,
-        :personal_consumption => ByRow(y -> max(0,y)) => :personal_consumption,
-        :household_supply => ByRow(y -> -min(0,y)) => :household_supply,
-    ) |>
-    x -> stack(x, Not(:commodities, :sectors, :year), variable_name = :subtable, value_name = :value) |>
-    x -> subset(x, :value => ByRow(!=(0)))
+    ) 
 end
 
 
@@ -269,7 +249,7 @@ function load_detailed_national_tables(data_path::String)
     )
 
     sets = WiNDC.create_national_sets(use["2017"], supply["2017"], detailed_sets)
-    detailed_subtables = WiNDC.create_national_subtables(sets)
+    #detailed_subtables = WiNDC.create_national_subtables(sets)
     
     tables = []
     for year in [f for f in XLSX.sheetnames(use) if f!="NAICS Codes"]
@@ -278,13 +258,12 @@ function load_detailed_national_tables(data_path::String)
             load_national_tables(
                 use, 
                 supply, 
-                detailed_subtables, 
                 year::String
             )
         )
     end
 
-    return NationalTable(vcat(tables...), sets)
+    return (vcat(tables...), sets)
 
 end
 
@@ -313,8 +292,6 @@ function load_summary_national_tables(data_path::String)
     )
 
     summary_sets = WiNDC.create_national_sets(summary_use["2017"], summary_supply["2017"], summary_set_regions; table_type=:summary)
-    summary_subtables = WiNDC.create_national_subtables(summary_sets)
-    
 
     summary_tables = []
     for year in XLSX.sheetnames(summary_use)
@@ -323,7 +300,6 @@ function load_summary_national_tables(data_path::String)
             load_national_tables(
                 summary_use, 
                 summary_supply, 
-                summary_subtables, 
                 year;
                 table_type = :summary,
                 use_range = "A6:CP90",
@@ -332,8 +308,37 @@ function load_summary_national_tables(data_path::String)
         )
     end
 
-    return NationalTable(vcat(summary_tables...), summary_sets)
+    return (vcat(summary_tables...), summary_sets)
 end
+
+
+
+function apply_national_subtables(data::DataFrame, subtables::DataFrame)
+
+    return data |>
+        x -> innerjoin(
+            x,
+            subtables,
+            on = [:commodities, :sectors, :table]
+        ) |>
+        x -> select(x, :commodities, :sectors, :year, :subtable, :value) |>
+        x -> unstack(x, :subtable, :value) |>
+        x -> coalesce.(x,0) |>
+        x -> transform(x, 
+            [:intermediate_demand, :intermediate_supply] => ByRow(
+                (d,s) -> (max(0, d - min(0, s)), max(0, s - min(0, d)))) => [:intermediate_demand, :intermediate_supply], #negative flows are reversed
+            :subsidies => ByRow(y -> -y) => :subsidies,
+            :margin_demand => ByRow(y ->  max(0,y)) => :margin_demand,
+            :margin_supply => ByRow(y -> -min(0,y)) => :margin_supply,
+            :personal_consumption => ByRow(y -> max(0,y)) => :personal_consumption,
+            :household_supply => ByRow(y -> -min(0,y)) => :household_supply,
+        ) |>
+        x -> stack(x, Not(:commodities, :sectors, :year), variable_name = :subtable, value_name = :value) |>
+        x -> subset(x, :value => ByRow(!=(0)))
+
+end
+
+
 
 
 function national_tables(data_path::String; aggregation = :detailed)
@@ -341,19 +346,32 @@ function national_tables(data_path::String; aggregation = :detailed)
     @assert(aggregation∈[:summary,:detailed,:raw_detailed], "Error: aggregation must be either :summary or :detailed")
 
     if aggregation == :summary
-        return load_summary_national_tables(data_path)
+        X, sets = load_summary_national_tables(data_path)
+        subtables = WiNDC.create_national_subtables(sets)
+
+        X = apply_national_subtables(X, subtables)
+
+        return NationalTable(X, sets)
     end
 
     if aggregation == :raw_detailed
-        return load_detailed_national_tables(data_path)
+        X,sets = load_detailed_national_tables(data_path)
+        subtables = WiNDC.create_national_subtables(sets)
+        X = apply_national_subtables(X, subtables)
+        return NationalTable(X, sets)
     end
 
     if aggregation == :detailed
-        summary = load_summary_national_tables(data_path)
-        detailed = load_detailed_national_tables(data_path)
+        
+        summary,_ = load_summary_national_tables(data_path)
+        detailed,sets = load_detailed_national_tables(data_path)
+        subtables = WiNDC.create_national_subtables(sets)
+        
         summary_map = detailed_summary_map(data_path)
 
-        return national_disaggragate_summary_to_detailed(detailed, summary, summary_map)
+        X = national_disaggragate_summary_to_detailed(detailed, summary, summary_map)
+        X = apply_national_subtables(X, subtables)
+        return NationalTable(X,sets)
     end
 
 end
@@ -461,27 +479,25 @@ function weight_function(year_detail::Int, year_summary::Int, minimum_detail::In
 end
 
 
-function national_disaggragate_summary_to_detailed(detailed, summary, summary_map)
+function national_disaggragate_summary_to_detailed(detailed::DataFrame, summary::DataFrame, summary_map::DataFrame)
 
-    min_detail_year = minimum(get_table(detailed)[!, :year])
-    max_detail_year = maximum(get_table(detailed)[!, :year])
+    min_detail_year = minimum(detailed[!, :year])
+    max_detail_year = maximum(detailed[!, :year])
 
-    detailed_value_share = get_table(detailed) |>
-        x -> leftjoin(x, summary_map, on = :commodities => :detailed, renamecols = "" => "_commodities") |>
-        x -> leftjoin(x, summary_map, on = :sectors => :detailed, renamecols = "" => "_sectors") |>
-        x -> groupby(x, [:summary_sectors,:summary_commodities,:year, :subtable]) |>
+    detailed_value_share = detailed |>
+        x -> innerjoin(x, summary_map, on = :commodities => :detailed, renamecols = "" => "_commodities") |>
+        x -> innerjoin(x, summary_map, on = :sectors => :detailed, renamecols = "" => "_sectors") |>
+        x -> groupby(x, [:summary_sectors,:summary_commodities,:year, :table]) |>
         x -> combine(x,
             :value => (y -> y./sum(y)) => :value_share,
             [:commodities, :sectors] .=> identity .=> [:commodities, :sectors]
         ) |>
-        x -> select(x, :commodities, :summary_commodities, :sectors, :summary_sectors, :year, :subtable, :value_share)
-    
-
+        x -> select(x, :commodities, :summary_commodities, :sectors, :summary_sectors, :year, :table, :value_share)
 
     df = innerjoin(
             detailed_value_share,
-            get_table(summary),
-            on = [:summary_commodities => :commodities, :summary_sectors => :sectors, :subtable],
+            summary,
+            on = [:summary_commodities => :commodities, :summary_sectors => :sectors, :table],
             renamecols = "" => "_summary"
         ) |>
         x -> transform(x,
@@ -489,12 +505,12 @@ function national_disaggragate_summary_to_detailed(detailed, summary, summary_ma
                 ByRow((dy,y,share,summary) -> WiNDC.weight_function(dy,y,min_detail_year,max_detail_year)*share*summary) => 
                 :value
         ) |>
-        x -> groupby(x, [:commodities, :sectors, :year_summary, :subtable]) |>
+        x -> groupby(x, [:commodities, :sectors, :year_summary, :table]) |>
         x -> combine(x, :value => sum => :value) |>
         x -> rename(x, :year_summary => :year) |>
         x -> subset(x, :value => ByRow(!=(0)))    
 
 
-    return NationalTable(df, detailed.sets)
+    return df
 
 end
