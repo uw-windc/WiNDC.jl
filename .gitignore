@@ -27,3 +27,5 @@ Manifest.toml
 testing_ground/
 
 docs/build
+
+.vscode/settings.json

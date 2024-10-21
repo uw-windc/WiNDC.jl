@@ -1,48 +1,31 @@
 module WiNDC
 
 
-using JuMP
-using PATHSolver
-using Ipopt
-using GamsStructure
-using CSV 
-using XLSX
-using DataFrames
-using HTTP
-using JSON
+using DataFrames, CSV, XLSX, FileIO, JuMP, Ipopt, MPSGE
 
+include("structs.jl")
 
-export generate_report
+export all_data, domain, WiNDCtable, get_set, get_table, get_subtable
 
-export national_model_mcp, national_model_mcp_year,  
-       state_disaggregation_model_mcp,state_disaggregation_model_mcp_year
+include("national/structs.jl")
 
-export load_national_data,load_state_data
+export NationalTable
 
+include("national/detailed_data.jl")
 
+export national_tables
 
-include("helper_functions.jl")
-include("data/notations.jl")
+include("national/calibrate.jl")
 
+export calibrate
 
+include("national/balance.jl")
 
-include("data/core/bea_api/bea_api.jl")
+export zero_profit, market_clearance, margin_balance
 
-#Models
-include("core/nationalmodel.jl")
-include("core/state_disaggregation_model.jl")
+include("national/model.jl")
 
-#Data
-include("data/core/core_data_defines.jl")
-include("data/core/bea_io/PartitionBEA.jl")
-include("data/core/bea_gsp/bea_gsp.jl")
-include("data/core/bea_pce/bea_pce.jl")
-include("data/core/census_sgf/census_sgf.jl")
-include("data/core/faf/faf.jl")
-include("data/core/usa_trade/usa_trade.jl")
-include("data/core/state_disaggregation.jl")
-
-include("data/core/core_data.jl")
+export national_mpsge
 
 
 end # module WiNDC
