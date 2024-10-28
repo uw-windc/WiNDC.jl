@@ -28,4 +28,13 @@ include("national/model.jl")
 export national_mpsge
 
 
+include("state/structs.jl")
+
+export StateTable
+
+include("state/disaggregate.jl")
+
+export disaggregate_national_to_state
+
+
 end # module WiNDC
