@@ -77,17 +77,6 @@ function calibrate(data::T; silent = false) where T<:AbstractNationalTable
         [:value, :variable] => ByRow((val, var) -> fix(var, val; force=true))
     ) 
 
-
-    # Fix negative valued data to 0
-    #get_table(data) |>
-    #    x -> subset(x,
-    #        :value => ByRow(y -> y < 0)
-    #    ) |>
-    #    x -> transform(x, 
-    #        [:value, :variable] => ByRow((val, var) -> fix(var, 0; force=true))
-    #    )
-
-
     @objective(
         M, 
         Min, 
@@ -189,8 +178,6 @@ function calibrate(data::T; silent = false) where T<:AbstractNationalTable
         x[i,:it] == x[i,:imports] * x[i,:itr]
     )
     
-
-
     optimize!(M)
 
     @assert is_solved_and_feasible(M) "Error: The model was not solved to optimality."
