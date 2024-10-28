@@ -12,6 +12,17 @@ function get_set(data::T, set_name::String) where T<:WiNDCtable
         )    
 end
 
+
+
+function get_set(data::T, set_name::Vector{String}) where T<:WiNDCtable
+    data.sets |>
+        x -> subset(x, 
+            :set => ByRow(x -> in(x, set_name))
+        )    
+end
+
+
+
 function get_table(data::T) where T<:WiNDCtable
     return data.table
 end
@@ -21,7 +32,8 @@ function get_subtable(
     data::WiNDCtable,
     subtable::String,
     column::Vector{Symbol};
-    negative::Bool = false
+    negative::Bool = false,
+    keep_all_columns = false
 )  
 
     columns = domain(data)
@@ -38,7 +50,7 @@ function get_subtable(
                 elements,
             on = [:subtable => :element]
         ) |>
-        x -> select(x, columns)
+        x -> ifelse(keep_all_columns, x, select(x, columns))
 
 end
 
@@ -56,3 +68,15 @@ function get_subtable(
         x -> transform(x, output => ByRow(y -> negative ? -y : identity(y)) => output)
 end
 
+function get_subtable(
+        data::WiNDCtable,
+        subtable::Vector{String}
+)
+    
+    return reduce(
+        (x,y) -> append!(x, get_subtable(data, y, [:value]; keep_all_columns = true)),
+        subtable,
+        init = DataFrame()
+    )
+
+end
