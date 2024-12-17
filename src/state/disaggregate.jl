@@ -37,20 +37,34 @@ function load_raw_sagdp_data(data_path, files)
 end
 
 
-function load_industry_codes(data_path, summary_map; file_name = "industry_codes.csv")
-    return CSV.read(
+function load_industry_codes(
+        data_path, 
+        summary_map; 
+        file_name = "industry_codes.csv",
+        aggregation = :detailed
+        )
+    
+    
+    df = CSV.read(
         joinpath(data_path, file_name),
         DataFrame
     ) |>
     x -> select(x, :LineCode, :naics) |>
-    x -> dropmissing(x) |>
-    x -> leftjoin(
-        x,
-        summary_map,
-        on = :naics => :summary
-    ) |>
-    x -> select(x, Not(:naics)) |>
-    x -> rename(x, :detailed => :naics)
+    x -> dropmissing(x) 
+    
+    
+    if aggregation == :detailed 
+        df = df|>
+            x -> leftjoin(
+                x,
+                summary_map,
+                on = :naics => :summary
+            ) |>
+            x -> select(x, Not(:naics)) |>
+            x -> rename(x, :detailed => :naics)
+    end
+
+    return df
 end
 
 
@@ -68,14 +82,19 @@ function load_sagdp_data(
     files::Vector{Tuple{String,String}},
     summary_map;
     industry_codes = "industry_codes.csv",
-    state_fips = "state_fips.csv"
+    state_fips = "state_fips.csv",
+    aggregation = :detailed
 )
 
     raw_sagdp = load_raw_sagdp_data(data_path, files)
 
-
     state_fips = load_state_fips(data_path; file_name = state_fips)
-    industry_codes = load_industry_codes(data_path, summary_map; file_name = industry_codes)
+    industry_codes = load_industry_codes(
+            data_path, 
+            summary_map; 
+            file_name = industry_codes, 
+            aggregation = aggregation
+            )
 
     return innerjoin(
         raw_sagdp,
@@ -90,13 +109,12 @@ function load_sagdp_data(
         makeunique = true
     ) |>
     x -> select(x, :naics, :state, :year, :table, :value) |>
-    x -> subset(x, :value => ByRow(x -> x != 0)) |>
-    x -> subset(x, 
-        :table => ByRow(x -> x == "gdp"),
-        :year => ByRow(x -> x<2023)
-    ) 
+    x -> subset(x, :value => ByRow(x -> x != 0)) 
 
 end
+
+
+
 
 ### What do we do with the naics codes that are missing? They'll be missing states too
 ### What I did was equal shares over the states. Seems fair. 
@@ -110,29 +128,30 @@ end
 #### Subtables Done Satisfactorily
 # "intermediate_demand" - gdp
 # "intermediate_supply" - gdp
-# "tax"                 - tax -> Something is off with this one
-# "subsidies"           - subsidies -> Something is off with this one
+# "tax"                 - tax 
+# "subsidies"           - subsidies 
 # "labor_demand"        - compensation
 # "capital_demand"      - surplus
 
 
-#### Subtable done, but could be better
-# "personal_consumption" - gdp
-# "household_supply"    - gdp
+#### Subtables done, but could be better
+# "personal_consumption"   - gdp
+# "household_supply"       - gdp
 # "exogenous_final_demand" - gdp
-# "exports"             - gdp
-# "imports"             - gdp
-# "margin_demand"       - gdp
-# "margin_supply"       - gdp
-# "duty"                - gdp
-# "other_tax" - gdp
+# "exports"                - gdp
+# "imports"                - gdp
+# "margin_demand"          - gdp
+# "margin_supply"          - gdp
+# "duty"                   - gdp
+# "other_tax"              - gdp
 function disaggregate_national_to_state(
     data::NationalTable,
     data_path::String,
     files::Vector{Tuple{String,String}},
     summary_map;
     industry_codes = "industry_codes.csv",
-    state_fips = "state_fips.csv"
+    state_fips = "state_fips.csv",
+    aggregation = :detailed
 )
 
     
@@ -142,8 +161,9 @@ function disaggregate_national_to_state(
         files,
         summary_map;
         industry_codes = industry_codes,
-        state_fips = state_fips
-        )
+        state_fips = state_fips,
+        aggregation = aggregation
+    )
 
     state_fips = load_state_fips(data_path; file_name = state_fips)
 
@@ -160,7 +180,6 @@ function disaggregate_national_to_state(
 
 
     intermediate = leftjoin(
-        #get_subtable(all_data, ["intermediate_demand","intermediate_supply"]),
         state_level |>
             x -> subset(x, 
                 :subtable => ByRow(x -> in(x, [
@@ -174,8 +193,6 @@ function disaggregate_national_to_state(
                     "margin_demand",
                     "margin_supply",
                     "duty",
-                    #"subsidies",
-                    #"tax"
                     ])),
             ),
         sagdp |>
@@ -304,7 +321,7 @@ function disaggregate_national_to_state(
 
 
     return StateTable(
-        vcat(intermediate, taxes, subsidies, capital_demand, labor_demand, other_tax), #subsidies, taxes, 
+        vcat(intermediate, taxes, subsidies, capital_demand, labor_demand, other_tax),
         data.sets
     )
 end

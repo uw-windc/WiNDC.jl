@@ -484,6 +484,10 @@ function national_disaggragate_summary_to_detailed(detailed::DataFrame, summary:
     min_detail_year = minimum(detailed[!, :year])
     max_detail_year = maximum(detailed[!, :year])
 
+#1111A0 111CA
+#1111B0 111CA
+
+
     detailed_value_share = detailed |>
         x -> innerjoin(x, summary_map, on = :commodities => :detailed, renamecols = "" => "_commodities") |>
         x -> innerjoin(x, summary_map, on = :sectors => :detailed, renamecols = "" => "_sectors") |>
