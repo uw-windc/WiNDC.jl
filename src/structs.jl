@@ -34,6 +34,10 @@ function get_set(data::T, set_name::Vector{String}) where T<:WiNDCtable
         )    
 end
 
+function get_set(data::T) where T<:WiNDCtable
+    return data.sets
+end
+
 """
     get_table(data::T) where T<:WiNDCtable
 
@@ -47,10 +51,6 @@ Return the main table of the WiNDCtable object as a DataFrame
 
 Returns a DataFrame with columns `domain(data)`, `subtable`, and `value`.
 """
-function get_set(data::T) where T<:WiNDCtable
-    return data.sets
-end
-
 function get_table(data::T) where T<:WiNDCtable
     return data.table
 end
