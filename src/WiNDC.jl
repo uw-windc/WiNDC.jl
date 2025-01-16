@@ -7,6 +7,11 @@ include("structs.jl")
 
 export all_data, domain, WiNDCtable, get_set, get_table, get_subtable
 
+include("io.jl")
+
+export save_table, load_table
+
+
 include("national/structs.jl")
 
 export NationalTable
