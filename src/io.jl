@@ -55,7 +55,7 @@ Load a `WiNDCtable` from a file.
 
 ## Returns
 
-An MUTNationalTable
+A subtype of a WiNDCtable, with the data and sets loaded from the file.
 """
 function load_table(
     file_path::String,
