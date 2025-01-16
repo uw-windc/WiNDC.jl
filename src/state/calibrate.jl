@@ -29,7 +29,7 @@ The following are fixed:
 Any zero values will remain zero. 
 
 """
-function calibrate(data::T; silent = false) where T<:AbstractNationalTable
+function calibrate(data::T; silent = false) where T<:AbstractRegionalTable
 
     
     M = Model(Ipopt.Optimizer)
@@ -112,7 +112,7 @@ function calibrate(data::T; silent = false) where T<:AbstractNationalTable
     outerjoin(
         gross_output(data; column = :variable, output = :expr),
         gross_output(data; column = :value),
-        on = [:commodities, :year]
+        on = filter(x -> x!=:sectors, domain(data))
     ) |> 
     x -> transform(x,
             :value => ByRow(v -> v>0 ? floor(lob*v)-5 : upb*v) => :lower, 
@@ -128,7 +128,7 @@ function calibrate(data::T; silent = false) where T<:AbstractNationalTable
     outerjoin(
         armington_supply(data; column = :variable, output = :expr),
         armington_supply(data; column = :value),
-        on = [:commodities, :year]
+        on = filter(x -> x!=:sectors, domain(data))
     ) |>
     x -> @constraint(M,
         armington_supply[i=1:size(x,1)],
