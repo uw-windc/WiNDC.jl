@@ -4,10 +4,15 @@ function national_mpsge(data::NationalTable)
 
     sectors = get_set(data, "sectors") |> x -> x[!,:element]
     commodities = get_set(data, "commodities") |> x -> x[!,:element]
-    #margins = ["Trade", "Trans"] # WRONG Needs actual fixing
-    margins = ["TRADE ", "TRANS"]
-    #ValueAdded = ["V001","V003"] # WRONG Needs actual fixing
-    ValueAdded = ["V00100","V00300"]
+
+    
+    margins = get_set(data, "margin_supply") |>
+                    x -> subset(x, :domain => ByRow(==(:sectors))) |>
+                    x -> x[:, :element]
+    
+    ValueAdded = get_set(data, ["labor_demand", "capital_demand"]) |>
+                    x -> subset(x, :domain => ByRow(==(:commodities))) |>
+                    x -> x[:, :element]
 
     @parameters(M, begin
         Absorption_tax[commodities], 0
