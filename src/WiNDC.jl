@@ -1,7 +1,7 @@
 module WiNDC
 
 
-using DataFrames, CSV, XLSX, FileIO, JuMP, Ipopt, MPSGE
+using DataFrames, CSV, XLSX, FileIO, JuMP, Ipopt, MPSGE, JLD2
 
 include("structs.jl")
 
