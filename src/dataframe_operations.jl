@@ -15,7 +15,6 @@ subset both the main table and the set table.
 ## Return
 
 A table of type `T`.
-
 """
 function DataFrames.subset(
         data::T, 
