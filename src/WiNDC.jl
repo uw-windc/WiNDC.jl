@@ -11,9 +11,6 @@ include("io.jl")
 
 export save_table, load_table
 
-include("dataframe_operations.jl")
-
-export subset
 
 include("national/structs.jl")
 
