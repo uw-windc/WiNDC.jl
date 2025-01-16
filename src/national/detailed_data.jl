@@ -9,21 +9,21 @@ This function creates the sets for the detailed national data.
 set regions for detailed table
 
     Dict(
-        "commodities" => ("use", ["A7:B408"], false),
-        "labor_demand" => ("use", ["A410:B410"], false),
-        "other_tax" => ("use", ["A411:B411"], false),
-        "capital_demand" => ("use", ["A412:B412"], false),
-        "sectors" => ("use", ["C5:ON6"], true),
-        "personal_consumption" => ("use", ["OP5:OP6"], true),
-        "household_supply" => ("use", ["OP5:OP6"], true),
-        "exports" => ("use", ["OV5:OV6"], true),
-        "exogenous_final_demand" => ("use", ["OQ5:OU6","OW5:PH6"], true),
-        "imports" => ("supply", ["OP5:OP6"], true),
-        "margin_demand" => ("supply", ["OS5:OT6"], true),
-        "margin_supply" => ("supply", ["OS5:OT6"], true),
-        "duty" => ("supply", ["OV5:OV6"], true),
-        "tax" => ("supply", ["OW5:OW6"], true),
-        "subsidies" => ("supply", ["OX5:OX6"], true)
+        "commodities" => ("use", ["A7:B408"], false, :commodities),
+        "labor_demand" => ("use", ["A410:B410"], false, :commodities),
+        "other_tax" => ("use", ["A411:B411"], false, :commodities),
+        "capital_demand" => ("use", ["A412:B412"], false, :commodities),
+        "sectors" => ("use", ["C5:ON6"], true, :sectors),
+        "personal_consumption" => ("use", ["OP5:OP6"], true, :sectors),
+        "household_supply" => ("use", ["OP5:OP6"], true, :sectors),
+        "exports" => ("use", ["OV5:OV6"], true, :sectors),
+        "exogenous_final_demand" => ("use", ["OQ5:OU6","OW5:PH6"], true, :sectors),
+        "imports" => ("supply", ["OP5:OP6"], true, :sectors),
+        "margin_demand" => ("supply", ["OS5:OT6"], true, :sectors),
+        "margin_supply" => ("supply", ["OS5:OT6"], true, :sectors),
+        "duty" => ("supply", ["OV5:OV6"], true, :sectors),
+        "tax" => ("supply", ["OW5:OW6"], true, :sectors),
+        "subsidies" => ("supply", ["OX5:OX6"], true, :sectors)
     )
 """
 function create_national_sets(
@@ -34,33 +34,33 @@ function create_national_sets(
 
     aggregate_sets = DataFrame(
         [
-        ("labor_demand", "Labor Demand", "value_added"),
-        ("capital_demand", "Capital Demand", "value_added"),
-        ("other_tax", "Other taxes on production", "value_added"),
-        ("exogenous_final_demand", "Exogenous portion of final demand", "final_demand"),
-        ("exports", "Exports of goods and services", "final_demand"),
-        ("personal_consumption", "Personal consumption expenditures", "final_demand"),
-        ("intermediate_demand", "", "intermediate_demand"),
-        ("labor_demand", "", "labor_demand"),
-        ("capital_demand", "", "capital_demand"),
-        ("other_tax", "", "other_tax"),
-        ("personal_consumption", "Personal consumption expenditures", "personal_consumption"),
-        ("exogenous_final_demand","", "exogenous_final_demand"),
-        ("exports", "", "exports"),
-        ("intermediate_supply", "", "intermediate_supply"),
-        ("imports", "", "imports"),
-        ("household_supply", "Personal consumption expenditures, values <0", "household_supply"),
-        ("margin_demand", "", "margin_demand"),
-        ("margin_supply", "", "margin_supply"),
-        ("duty", "", "duty"),
-        ("tax", "", "tax"),
-        ("subsidies", "", "subsidies"),
+        ("labor_demand", "Labor Demand", "value_added", :composite),
+        ("capital_demand", "Capital Demand", "value_added", :composite),
+        ("other_tax", "Other taxes on production", "value_added", :composite),
+        ("exogenous_final_demand", "Exogenous portion of final demand", "final_demand", :composite),
+        ("exports", "Exports of goods and services", "final_demand", :composite),
+        ("personal_consumption", "Personal consumption expenditures", "final_demand", :composite),
+        ("intermediate_demand", "", "intermediate_demand", :composite),
+        ("labor_demand", "", "labor_demand", :composite),
+        ("capital_demand", "", "capital_demand", :composite),
+        ("other_tax", "", "other_tax", :composite),
+        ("personal_consumption", "Personal consumption expenditures", "personal_consumption", :composite),
+        ("exogenous_final_demand","", "exogenous_final_demand", :composite),
+        ("exports", "", "exports", :composite),
+        ("intermediate_supply", "", "intermediate_supply", :composite),
+        ("imports", "", "imports", :composite),
+        ("household_supply", "Personal consumption expenditures, values <0", "household_supply", :composite),
+        ("margin_demand", "", "margin_demand", :composite),
+        ("margin_supply", "", "margin_supply", :composite),
+        ("duty", "", "duty", :composite),
+        ("tax", "", "tax", :composite),
+        ("subsidies", "", "subsidies", :composite),
         ],
-    [:element, :description, :set]
+    [:element, :description, :set, :domain]
     )
 
     S = [aggregate_sets]
-    for (key, (sheet, range, flip)) in set_regions
+    for (key, (sheet, range, flip, dom)) in set_regions
         if sheet == "use"
             table = use
         else
@@ -76,7 +76,10 @@ function create_national_sets(
             region = vcat([table[x] for x in range]...)
         end
         df = DataFrame(region, [:element, :description]) |>
-            x -> transform!(x, :element => ByRow(x -> key) => :set)
+            x -> transform!(x, 
+                :element => ByRow(x -> key) => :set,
+                :element => ByRow(x -> dom) => :domain
+            )
         push!(S, df)
     end
 
@@ -231,21 +234,21 @@ function load_detailed_national_tables(data_path::String)
     
 
     detailed_sets = Dict(
-        "commodities" => ("use", ["A7:B408"], false),
-        "labor_demand" => ("use", ["A410:B410"], false),
-        "other_tax" => ("use", ["A411:B411"], false),
-        "capital_demand" => ("use", ["A412:B412"], false),
-        "sectors" => ("use", ["C5:ON6"], true),
-        "personal_consumption" => ("use", ["OP5:OP6"], true),
-        "household_supply" => ("use", ["OP5:OP6"], true),
-        "exports" => ("use", ["OV5:OV6"], true),
-        "exogenous_final_demand" => ("use", ["OQ5:OU6","OW5:PH6"], true),
-        "imports" => ("supply", ["OP5:OP6"], true),
-        "margin_demand" => ("supply", ["OS5:OT6"], true),
-        "margin_supply" => ("supply", ["OS5:OT6"], true),
-        "duty" => ("supply", ["OV5:OV6"], true),
-        "tax" => ("supply", ["OW5:OW6"], true),
-        "subsidies" => ("supply", ["OX5:OX6"], true)
+        "commodities" => ("use", ["A7:B408"], false, :commodities),
+        "labor_demand" => ("use", ["A410:B410"], false, :commodities),
+        "other_tax" => ("use", ["A411:B411"], false, :commodities),
+        "capital_demand" => ("use", ["A412:B412"], false, :commodities),
+        "sectors" => ("use", ["C5:ON6"], true, :sectors),
+        "personal_consumption" => ("use", ["OP5:OP6"], true, :sectors),
+        "household_supply" => ("use", ["OP5:OP6"], true, :sectors),
+        "exports" => ("use", ["OV5:OV6"], true, :sectors),
+        "exogenous_final_demand" => ("use", ["OQ5:OU6","OW5:PH6"], true, :sectors),
+        "imports" => ("supply", ["OP5:OP6"], true, :sectors),
+        "margin_demand" => ("supply", ["OS5:OT6"], true, :sectors),
+        "margin_supply" => ("supply", ["OS5:OT6"], true, :sectors),
+        "duty" => ("supply", ["OV5:OV6"], true, :sectors),
+        "tax" => ("supply", ["OW5:OW6"], true, :sectors),
+        "subsidies" => ("supply", ["OX5:OX6"], true, :sectors)
     )
 
     sets = WiNDC.create_national_sets(use["2017"], supply["2017"], detailed_sets)
@@ -274,21 +277,21 @@ function load_summary_national_tables(data_path::String)
     
 
     summary_set_regions = Dict(
-        "commodities" => ("use", ["A8:B80"], false),
-        "labor_demand" => ("use", ["A82:B82"], false),
-        "other_tax" => ("use", ["A83:B83"], false),
-        "capital_demand" => ("use", ["A85:B85"], false),
-        "sectors" => ("use", ["C6:BU7"], true),
-        "personal_consumption" => ("use", ["BW6:BW7"], true),
-        "household_supply" => ("use", ["BW6:BW7"], true),
-        "exports" => ("use", ["CC6:CC7"], true),
-        "exogenous_final_demand" => ("use", ["BX6:CB7","CD6:CO7"], true),
-        "imports" => ("supply", ["BW6:BW7"], true),
-        "margin_demand" => ("supply", ["BZ6:CA7"], true),
-        "margin_supply" => ("supply", ["BZ6:CA7"], true),
-        "duty" => ("supply", ["CC6:CC7"], true),
-        "tax" => ("supply", ["CD6:CD7"], true),
-        "subsidies" => ("supply", ["CE6:CE7"], true)
+        "commodities" => ("use", ["A8:B80"], false, :commodities),
+        "labor_demand" => ("use", ["A82:B82"], false, :commodities),
+        "other_tax" => ("use", ["A83:B83"], false, :commodities),
+        "capital_demand" => ("use", ["A85:B85"], false, :commodities),
+        "sectors" => ("use", ["C6:BU7"], true, :sectors),
+        "personal_consumption" => ("use", ["BW6:BW7"], true, :sectors),
+        "household_supply" => ("use", ["BW6:BW7"], true, :sectors),
+        "exports" => ("use", ["CC6:CC7"], true, :sectors),
+        "exogenous_final_demand" => ("use", ["BX6:CB7","CD6:CO7"], true, :sectors),
+        "imports" => ("supply", ["BW6:BW7"], true, :sectors),
+        "margin_demand" => ("supply", ["BZ6:CA7"], true, :sectors),
+        "margin_supply" => ("supply", ["BZ6:CA7"], true, :sectors),
+        "duty" => ("supply", ["CC6:CC7"], true, :sectors),
+        "tax" => ("supply", ["CD6:CD7"], true, :sectors),
+        "subsidies" => ("supply", ["CE6:CE7"], true, :sectors)
     )
 
     summary_sets = WiNDC.create_national_sets(summary_use["2017"], summary_supply["2017"], summary_set_regions; table_type=:summary)
