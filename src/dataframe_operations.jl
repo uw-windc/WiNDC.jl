@@ -104,7 +104,8 @@ function aggregate(
         aggr = X |>
             y -> subset(y,
                 original => ByRow(e -> in(e, elements))
-            )
+            ) |>
+            x -> select(x, [original, new])
 
         df = df |>
             x -> leftjoin(
@@ -121,12 +122,12 @@ function aggregate(
             x -> leftjoin(
                 x,
                 aggr,
-                on = [:element => :original]
+                on = [:element => original]
             ) |>
             x -> transform(x,
-                [:element, :new] => ByRow((e, n) -> ismissing(n) ? e : n) => :element
+                [:element, new] => ByRow((e, n) -> ismissing(n) ? e : n) => :element
             ) |>
-            x -> select(x, Not(:new))  |>
+            x -> select(x, Not(new))  |>
             x -> unique(x, :element) |>
             x -> vcat(
                 sets |>
