@@ -27,7 +27,7 @@ function DataFrames.subset(
 
     D = []
     for (a, _) in args
-        S = get_set(all_data) |>
+        S = get_set(data) |>
             x -> subset(x, 
                 :set => ByRow(==(String(a)))
             ) 
@@ -39,12 +39,12 @@ function DataFrames.subset(
         push!(D, (new_d[1], elements))
     end
 
-    new_table = get_table(all_data) |>
+    new_table = get_table(data) |>
         x -> subset(x, 
             [column => ByRow(a -> a∉L || F(a)) for  ((column, L), (TMP, F)) in zip(D,args)]...
         )  
     
-    new_set = get_set(all_data) |>
+    new_set = get_set(data) |>
         x -> subset(x,
             [[:element, :set] => ByRow((e,s) -> Symbol(s)!=S || F(e)) for (S, F) in args]...
         )
