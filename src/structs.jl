@@ -1,5 +1,22 @@
+"""
+    WiNDCtable
+
+Base abstract type for all structures. Subtypes should have field names
+
+- `table` - A DataFrame with columns [`domain`](@ref), `:subtable`, and `:value`.
+- `sets` - A DataFrame with columns `:set`, `:element`, and `:description`.
+
+And implement the function `domain(data::T) where T<:WiNDCtable` which should 
+    return a vector of symbols representing the domain of the table.
+"""
 abstract type WiNDCtable end;
 
+"""
+    domain(data::T) where T<:WiNDCtable
+
+Return the domain of the table as a vector of symbols. Must be implemented for
+any subtype of a WiNDCtable.
+"""
 domain(data::WiNDCtable) = throw(ArgumentError("domain not implemented for WiNDCtable"))
 
 
