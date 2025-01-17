@@ -12,3 +12,6 @@ Currently, the only available module is the National module.
 
 
 
+```@autodocs
+Order   = [:type, :function]
+```
