@@ -12,3 +12,7 @@ Currently, the only available module is the National module.
 
 
 
+```@autodocs
+Modules = [WiNDC]
+Order   = [:type, :function]
+```
