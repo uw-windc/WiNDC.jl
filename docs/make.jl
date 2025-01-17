@@ -1,4 +1,4 @@
-using Documenter, WiNDC, GamsStructure, PATHSolver
+using Documenter, WiNDC, PATHSolver
 
 
 
