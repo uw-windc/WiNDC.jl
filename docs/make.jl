@@ -1,5 +1,6 @@
 using Documenter, WiNDC
 
+DocMeta.setdocmeta!(WiNDC, :DocTestSetup, :(using WiNDC); recursive=true)
 
 
 const _PAGES = [
@@ -22,7 +23,6 @@ makedocs(
 
 deploydocs(
     repo = "https://github.com/uw-windc/WiNDC.jl",
-    target = "build",
     branch = "gh-pages",
     #versions = ["stable" => "v^", "v#.#" ],
 )
