@@ -24,5 +24,6 @@ makedocs(
 deploydocs(
     repo = "https://github.com/uw-windc/WiNDC.jl",
     branch = "gh-pages",
+    push_preview = true
     #versions = ["stable" => "v^", "v#.#" ],
 )
