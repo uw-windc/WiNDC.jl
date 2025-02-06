@@ -7,6 +7,7 @@ const _PAGES = [
     "Data" => ["data/core.md"],
     "National Module" => ["national/overview.md"]
     #"Core Module" => ["core/overview.md","core/national_model.md","core/national_set_list.md","core/state_model.md","core/set_listing.md"]
+    "API" => ["api.md"]
     
 ]
 
@@ -14,15 +15,8 @@ const _PAGES = [
 makedocs(
     sitename="WiNDC.jl",
     authors="WiNDC",
-    #format = Documenter.HTML(
-    #    # See https://github.com/JuliaDocs/Documenter.jl/issues/868
-    #    prettyurls = get(ENV, "CI", nothing) == "true",
-    #    analytics = "UA-44252521-1",
-    #    collapselevel = 1,
-    #    assets = ["assets/extra_styles.css"],
-    #    sidebar_sitename = false,
-    #),
-    #strict = true,
+    format = Documenter.HTML(),
+    modules = [WiNDC],
     pages = _PAGES
 )
 
@@ -33,4 +27,5 @@ deploydocs(
     target = "build",
     branch = "gh-pages",
     versions = ["stable" => "v^", "v#.#" ],
+    push_preview = true
 )
