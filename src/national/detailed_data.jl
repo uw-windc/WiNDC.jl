@@ -141,254 +141,6 @@ function create_national_subtables(sets)
 end
 
 
-function load_national_year(
-            X::XLSX.XLSXFile,
-            year,
-            range,
-            table_name::String;
-            scale = 1_000,
-            data_start_row = 2)
-
-    U = X[year][range]
-
-    U[1,1] = :commodities
-    U[1,2] = :drop
-
-    U[@.(!ismissing(U) && U=="...")] .= missing
-
-    return DataFrame(U[data_start_row:end,1:end], string.(U[1,:])) |>
-                    x -> select(x, Not(:drop)) |>
-                    x -> stack(x, Not(:commodities), variable_name = :sectors) |>
-                    x -> coalesce.(x, 0) |>
-                    x -> subset(x,
-                        :value => ByRow(!=(0))
-                    ) |>
-                    x -> transform(x,
-                        :value => (y -> y/scale) => :value,
-                        [:commodities,:sectors] .=> ByRow(string) .=> [:commodities,:sectors],
-                        :commodities => ByRow(y -> parse(Int, year)) => :year,
-                        :commodities => ByRow(y -> table_name) => :table
-                    )
-end
-
-function load_national_tables(
-            use, 
-            supply, 
-            year::String;
-            table_type = :detailed,
-            use_range = "A6:PI417",
-            supply_range = "A6:OZ409"
-        )
-
-    insurance_codes = table_type == :detailed ? ["524113","5241XX","524200"] : ["524"]    
-    data_start_row = table_type == :detailed ? 2 : 3
-
-
-    detailed_use = load_national_year(
-        use,
-        year,
-        use_range,
-        "use";
-        data_start_row = data_start_row
-    )
-
-    trans_col = table_type == :detailed ? :TRANS : :Trans
-
-    detailed_supply = WiNDC.load_national_year(
-            supply,
-            year,
-            supply_range,
-            "supply";
-            data_start_row = data_start_row
-        ) |>
-        x -> unstack(x, :sectors, :value) |>
-        x -> coalesce.(x, 0) |>
-        x -> transform(x, 
-            # adjust transport margins for transport sectors according to CIF/FOP 
-            # adjustments. Insurance imports are specified as net of adjustments.
-        [:commodities, trans_col, :MADJ] => ByRow((c,t,f) -> c∈insurance_codes ? t : t+f) => trans_col,
-        [:commodities, :MCIF, :MADJ] => ByRow((c,i,f) -> c∈insurance_codes ? i+f : i) => :MCIF,
-        ) |>
-        x -> select(x, Not(:MADJ)) |>
-            x -> stack(x, Not(:commodities, :year,:table), variable_name = :sectors, value_name = :value) |>
-        x -> dropmissing(x) |>
-        x -> subset(x, :value => ByRow(x -> x!=0)) 
-
-
-    return vcat(
-        detailed_use,
-        detailed_supply
-    ) |>
-    x -> transform(x,
-        [:commodities, :sectors] .=> ByRow(x -> string(x)) .=> [:commodities, :sectors]
-    ) 
-end
-
-
-
-function load_detailed_national_tables(
-        use::XLSX.XLSXFile,
-        supply::XLSX.XLSXFile;
-        use_range = "A6:PI417",
-        supply_range = "A6:OZ409"
-        )
-    #use = XLSX.readxlsx(joinpath(data_path, "use_detailed.xlsx"))
-    #supply = XLSX.readxlsx(joinpath(data_path, "supply_detailed.xlsx"))
-    
-
-    detailed_sets = Dict(
-        "commodities" => ("use", ["A7:B408"], false, :commodities),
-        "labor_demand" => ("use", ["A410:B410"], false, :commodities),
-        "other_tax" => ("use", ["A411:B411"], false, :commodities),
-        "capital_demand" => ("use", ["A412:B412"], false, :commodities),
-        "sectors" => ("use", ["C5:ON6"], true, :sectors),
-        "personal_consumption" => ("use", ["OP5:OP6"], true, :sectors),
-        "household_supply" => ("use", ["OP5:OP6"], true, :sectors),
-        "exports" => ("use", ["OV5:OV6"], true, :sectors),
-        "exogenous_final_demand" => ("use", ["OQ5:OU6","OW5:PH6"], true, :sectors),
-        "imports" => ("supply", ["OP5:OP6"], true, :sectors),
-        "margin_demand" => ("supply", ["OS5:OT6"], true, :sectors),
-        "margin_supply" => ("supply", ["OS5:OT6"], true, :sectors),
-        "duty" => ("supply", ["OV5:OV6"], true, :sectors),
-        "tax" => ("supply", ["OW5:OW6"], true, :sectors),
-        "subsidies" => ("supply", ["OX5:OX6"], true, :sectors)
-    )
-
-    sets = WiNDC.create_national_sets(use["2017"], supply["2017"], detailed_sets)
-    
-    tables = DataFrame()
-    for year in [f for f in XLSX.sheetnames(use) if f!="NAICS Codes"]
-        tables = vcat(
-            tables, 
-            load_national_tables(
-                use, 
-                supply, 
-                year;
-                table_type = :detailed,
-                use_range = use_range,
-                supply_range = supply_range
-            )
-        )
-    end
-
-    return (tables, sets)
-
-end
-
-
-function load_summary_national_tables(
-        use::XLSX.XLSXFile,
-        supply::XLSX.XLSXFile;
-        use_range = "A6:CP90",
-        supply_range = "A6:CG81"
-        )
-
-
-    summary_set_regions = Dict(
-        "commodities" => ("use", ["A8:B80"], false, :commodities),
-        "labor_demand" => ("use", ["A82:B82"], false, :commodities),
-        "other_tax" => ("use", ["A83:B83"], false, :commodities),
-        "capital_demand" => ("use", ["A85:B85"], false, :commodities),
-        "sectors" => ("use", ["C6:BU7"], true, :sectors),
-        "personal_consumption" => ("use", ["BW6:BW7"], true, :sectors),
-        "household_supply" => ("use", ["BW6:BW7"], true, :sectors),
-        "exports" => ("use", ["CC6:CC7"], true, :sectors),
-        "exogenous_final_demand" => ("use", ["BX6:CB7","CD6:CO7"], true, :sectors),
-        "imports" => ("supply", ["BW6:BW7"], true, :sectors),
-        "margin_demand" => ("supply", ["BZ6:CA7"], true, :sectors),
-        "margin_supply" => ("supply", ["BZ6:CA7"], true, :sectors),
-        "duty" => ("supply", ["CC6:CC7"], true, :sectors),
-        "tax" => ("supply", ["CD6:CD7"], true, :sectors),
-        "subsidies" => ("supply", ["CE6:CE7"], true, :sectors)
-    )
-
-    summary_sets = WiNDC.create_national_sets(use["2017"], supply["2017"], summary_set_regions; table_type=:summary)
-
-    summary_tables = DataFrame()
-    for year in XLSX.sheetnames(use)
-        summary_tables = vcat(
-            summary_tables, 
-            load_national_tables(
-                use, 
-                supply, 
-                year;
-                table_type = :summary,
-                use_range = use_range,
-                supply_range = supply_range
-            )
-        )
-    end
-
-    return (summary_tables, summary_sets)
-end
-
-
-
-function apply_national_subtables(data::DataFrame, subtables::DataFrame)
-
-    return data |>
-        x -> innerjoin(
-            x,
-            subtables,
-            on = [:commodities, :sectors, :table]
-        ) |>
-        x -> select(x, :commodities, :sectors, :year, :subtable, :value) |>
-        x -> unstack(x, :subtable, :value) |>
-        x -> coalesce.(x,0) |>
-        x -> transform(x, 
-            [:intermediate_demand, :intermediate_supply] => ByRow(
-                (d,s) -> (max(0, d - min(0, s)), max(0, s - min(0, d)))) => [:intermediate_demand, :intermediate_supply], #negative flows are reversed
-            :subsidies => ByRow(y -> -y) => :subsidies,
-            :margin_demand => ByRow(y ->  max(0,y)) => :margin_demand,
-            :margin_supply => ByRow(y -> -min(0,y)) => :margin_supply,
-            :personal_consumption => ByRow(y -> max(0,y)) => :personal_consumption,
-            :household_supply => ByRow(y -> -min(0,y)) => :household_supply,
-        ) |>
-        x -> stack(x, Not(:commodities, :sectors, :year), variable_name = :subtable, value_name = :value) |>
-        x -> subset(x, :value => ByRow(!=(0)))
-
-end
-
-
-
-
-function national_tables(data_path::String; aggregation = :detailed)
-    
-    @assert(aggregation∈[:summary,:detailed,:raw_detailed], "Error: aggregation must be either :summary or :detailed")
-
-    if aggregation == :summary
-        X, sets = load_summary_national_tables(data_path)
-        subtables = WiNDC.create_national_subtables(sets)
-
-        X = apply_national_subtables(X, subtables)
-
-        return NationalTable(X, sets)
-    end
-
-    if aggregation == :raw_detailed
-        X,sets = load_detailed_national_tables(data_path)
-        subtables = WiNDC.create_national_subtables(sets)
-        X = apply_national_subtables(X, subtables)
-        return NationalTable(X, sets)
-    end
-
-    if aggregation == :detailed
-        
-        summary,_ = load_summary_national_tables(data_path)
-        detailed,sets = load_detailed_national_tables(data_path)
-        subtables = WiNDC.create_national_subtables(sets)
-        
-        summary_map = detailed_summary_map(data_path)
-
-        X = national_disaggragate_summary_to_detailed(detailed, summary, summary_map)
-        X = apply_national_subtables(X, subtables)
-        return NationalTable(X,sets)
-    end
-
-end
-
-
-
 
 
 ############################
@@ -421,7 +173,7 @@ demand and supply extras to the summary sectors.
 """
 function detailed_summary_map(detailed_path::String)
 
-    detailed_xlsx = XLSX.readdata(joinpath(detailed_path,"use_detailed.xlsx"), "NAICS Codes", "B5:E1022")
+    detailed_xlsx = XLSX.readdata(detailed_path, "NAICS Codes", "B5:E1022")
 
     df = detailed_xlsx |>
         x -> DataFrame(x[4:end,:], [x[1,1:end-1]..., "description"]) |>
@@ -493,29 +245,29 @@ function weight_function(year_detail::Int, year_summary::Int, minimum_detail::In
 end
 
 
-function national_disaggragate_summary_to_detailed(detailed::DataFrame, summary::DataFrame, summary_map::DataFrame)
+function national_disaggragate_summary_to_detailed(detailed::NationalTable, summary::NationalTable, summary_map::DataFrame)
 
-    min_detail_year = minimum(detailed[!, :year])
-    max_detail_year = maximum(detailed[!, :year])
+    min_detail_year = minimum(get_table(detailed)[!, :year])
+    max_detail_year = maximum(get_table(detailed)[!, :year])
 
 #1111A0 111CA
 #1111B0 111CA
 
 
-    detailed_value_share = detailed |>
+    detailed_value_share = get_table(detailed) |>
         x -> innerjoin(x, summary_map, on = :commodities => :detailed, renamecols = "" => "_commodities") |>
         x -> innerjoin(x, summary_map, on = :sectors => :detailed, renamecols = "" => "_sectors") |>
-        x -> groupby(x, [:summary_sectors,:summary_commodities,:year, :table]) |>
+        x -> groupby(x, [:summary_sectors,:summary_commodities,:year, :subtable]) |>
         x -> combine(x,
             :value => (y -> y./sum(y)) => :value_share,
             [:commodities, :sectors] .=> identity .=> [:commodities, :sectors]
         ) |>
-        x -> select(x, :commodities, :summary_commodities, :sectors, :summary_sectors, :year, :table, :value_share)
+        x -> select(x, :commodities, :summary_commodities, :sectors, :summary_sectors, :year, :subtable, :value_share)
 
     df = innerjoin(
             detailed_value_share,
-            summary,
-            on = [:summary_commodities => :commodities, :summary_sectors => :sectors, :table],
+            get_table(summary),
+            on = [:summary_commodities => :commodities, :summary_sectors => :sectors, :subtable],
             renamecols = "" => "_summary"
         ) |>
         x -> transform(x,
@@ -523,12 +275,12 @@ function national_disaggragate_summary_to_detailed(detailed::DataFrame, summary:
                 ByRow((dy,y,share,summary) -> WiNDC.weight_function(dy,y,min_detail_year,max_detail_year)*share*summary) => 
                 :value
         ) |>
-        x -> groupby(x, [:commodities, :sectors, :year_summary, :table]) |>
+        x -> groupby(x, [:commodities, :sectors, :year_summary, :subtable]) |>
         x -> combine(x, :value => sum => :value) |>
         x -> rename(x, :year_summary => :year) |>
         x -> subset(x, :value => ByRow(!=(0)))    
 
 
-    return df
+    return NationalTable(df, get_set(detailed))
 
 end

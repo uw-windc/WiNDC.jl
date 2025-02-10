@@ -231,9 +231,7 @@ function build_national_table(
         supply_path = filter(x -> occursin(r"Supply_.*Summary",x), file_paths)[1]
 
     end
-
-    println("Use: $use_path\nSupply: $supply_path")
-
+    
     use = XLSX.readxlsx(use_path)
     supply = XLSX.readxlsx(supply_path)
 
