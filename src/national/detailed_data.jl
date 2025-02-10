@@ -44,7 +44,7 @@ function create_national_sets(
         ("intermediate_demand", "", "intermediate_demand", :composite),
         ("labor_demand", "", "labor_demand", :composite),
         ("capital_demand", "", "capital_demand", :composite),
-        ("sector_subsidy", "Introduced after Covid", "sector_subsidty", :composite), 
+        ("sector_subsidy", "Introduced after Covid", "sector_subsidy", :composite), 
         ("other_tax", "", "other_tax", :composite),
         ("personal_consumption", "Personal consumption expenditures", "personal_consumption", :composite),
         ("exogenous_final_demand","", "exogenous_final_demand", :composite),
