@@ -109,6 +109,8 @@ function load_national_data(
     @assert XLSX.sheetnames(use) == XLSX.sheetnames(supply) "Use and supply tables do not have the same years."
 
     data_start_row = table_type == :detailed ? 2 : 3
+    insurance_codes = table_type == :detailed ? ["524113","5241XX","524200"] : ["524"]  
+    trans_col = table_type == :detailed ? :TRANS : :Trans
 
     out = DataFrame()
     for year in [f for f in XLSX.sheetnames(use) if f!="NAICS Codes"]
@@ -126,7 +128,19 @@ function load_national_data(
             supply_range,
             "supply";
             data_start_row = data_start_row
-        )
+        )|>
+        x -> unstack(x, :sectors, :value) |>
+        x -> coalesce.(x, 0) |>
+        x -> transform(x, 
+            # adjust transport margins for transport sectors according to CIF/FOP 
+            # adjustments. Insurance imports are specified as net of adjustments.
+        [:commodities, trans_col, :MADJ] => ByRow((c,t,f) -> c∈insurance_codes ? t : t+f) => trans_col,
+        [:commodities, :MCIF, :MADJ] => ByRow((c,i,f) -> c∈insurance_codes ? i+f : i) => :MCIF,
+        ) |>
+        x -> select(x, Not(:MADJ)) |>
+            x -> stack(x, Not(:commodities, :year,:table), variable_name = :sectors, value_name = :value) |>
+        x -> dropmissing(x) |>
+        x -> subset(x, :value => ByRow(x -> x!=0)) 
 
         out = vcat(out, use_df_year, supply_df_year)
     end
@@ -197,7 +211,7 @@ function build_national_table(
             "duty" => ("supply", ["OV5:OV6"], :sectors),
             "tax" => ("supply", ["OW5:OW6"], :sectors),
             "subsidies" => ("supply", ["OX5:OX6"], :sectors),
-            "cif" => ("supply", ["OQ5:OQ6"], :sectors),
+            #"cif" => ("supply", ["OQ5:OQ6"], :sectors),
         )
 
         use_path = filter(x -> occursin(r"Use_.*_DET",x), file_paths)[1]
@@ -224,7 +238,7 @@ function build_national_table(
             "duty" => ("supply", ["CC6:CC7"], :sectors),
             "tax" => ("supply", ["CD6:CD7"], :sectors),
             "subsidies" => ("supply", ["CE6:CE7"], :sectors),
-            "cif" => ("supply", ["BX6:BX7"], :sectors),
+            #"cif" => ("supply", ["BX6:BX7"], :sectors),
         )
 
         use_path = filter(x -> occursin(r"Use_.*Summary",x), file_paths)[1]
