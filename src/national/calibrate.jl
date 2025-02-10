@@ -107,7 +107,6 @@ function calibrate(data::T; silent = false) where T<:AbstractNationalTable
         x[i,:margin_balance] == 0
     )
     
-    
     # Bound gross output
     outerjoin(
         gross_output(data; column = :variable, output = :expr),
@@ -122,7 +121,7 @@ function calibrate(data::T; silent = false) where T<:AbstractNationalTable
         gross_output[i=1:size(x,1)],
         x[i,:lower] <= x[i,:expr] <= x[i,:upper]
     )
-        
+  
     
     # Bound armington supply
     outerjoin(
@@ -134,24 +133,25 @@ function calibrate(data::T; silent = false) where T<:AbstractNationalTable
         armington_supply[i=1:size(x,1)],
         max(0,lob * x[i,:value]) <= x[i,:expr] <= abs(upb * x[i,:value])
     )
+ 
     
-    
+
     # Fix tax rates
     outerjoin(
-        get_subtable(data, "intermediate_supply", column = :variable, output = :is) |>
+        get_subtable(data, ["intermediate_demand", "value_added"])  |>
             x -> groupby(x, filter(y -> y!=:commodities, domain(data))) |>
-            x -> combine(x, :is => sum => :is),
-        get_subtable(data, "other_tax", column = :variable, output = :ot) |>
-            x -> select(x, Not(:commodities)),
+            x -> combine(x, :variable => sum => :total_output),
+        output_tax(data, column = :variable, output = :ot),
         other_tax_rate(data, column = :value, output = :otr),
         on = filter(y -> y!=:commodities, domain(data))
     ) |>
     x -> dropmissing(x) |>
     x -> @constraint(M, 
         Output_Tax_Rate[i=1:size(x,1)],
-        x[i,:ot] == x[i,:is] * x[i,:otr]
+        x[i,:ot] == x[i,:total_output] * x[i,:otr]
     )
     
+
     outerjoin(
         absorption_tax(data, column = :variable, output = :at),
         armington_supply(data, column = :variable, output = :as),
@@ -177,7 +177,7 @@ function calibrate(data::T; silent = false) where T<:AbstractNationalTable
         Import_Tariff_Rate[i=1:size(x,1)],
         x[i,:it] == x[i,:imports] * x[i,:itr]
     )
-    
+
     optimize!(M)
 
     @assert is_solved_and_feasible(M) "Error: The model was not solved to optimality."
