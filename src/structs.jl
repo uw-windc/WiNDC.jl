@@ -110,10 +110,11 @@ function get_subtable(
         subtable::String;
         column::Symbol = :value,
         output::Symbol = :value,
-        negative = false
+        negative = false,
+        keep_all_columns = false
     )
 
-    return get_subtable(data, subtable, [column]) |>
+    return get_subtable(data, subtable, [column]; keep_all_columns = keep_all_columns) |>
         x -> rename(x, column => output) |>
         x -> transform(x, output => ByRow(y -> negative ? -y : identity(y)) => output)
 end
