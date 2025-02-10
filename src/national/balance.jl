@@ -23,7 +23,6 @@ function market_clearance(data::AbstractNationalTable; column = :value, output =
 
             get_subtable(data, "intermediate_supply", column = column, output = output, negative = true),
             get_subtable(data, "imports", column = column, output = output, negative = true),
-            get_subtable(data, "cif", column = column, output = output, negative = true),
             get_subtable(data, "margin_demand", column = column, output = output, negative = true),
             get_subtable(data, "margin_supply", column = column, output = output), # Made negative earlier
             get_subtable(data, "duty", column = column, output = output, negative = true),
