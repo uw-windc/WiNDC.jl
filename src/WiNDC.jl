@@ -19,6 +19,10 @@ include("dataframe_operations.jl")
 
 export subset
 
+include("calibration.jl")
+
+export calibrate
+
 include("api/download.jl")
 
 ## National Data
