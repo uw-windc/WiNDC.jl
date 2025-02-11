@@ -44,8 +44,6 @@ export build_national_table
 
 include("national/calibrate.jl")
 
-export calibrate
-
 include("national/balance.jl")
 
 export zero_profit, market_clearance, margin_balance
