@@ -25,7 +25,6 @@ deploydocs(
     repo = "https://github.com/uw-windc/WiNDC.jl",
     target = "build",
     branch = "gh-pages",
-    devbranch = "dev",
     versions = ["stable" => "v^", "v#.#", "dev" => "dev" ],
     push_preview = true
 )
