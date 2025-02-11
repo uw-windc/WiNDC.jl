@@ -142,6 +142,15 @@ function load_national_data(
         x -> dropmissing(x) |>
         x -> subset(x, :value => ByRow(x -> x!=0)) 
 
+        # Remove subsidies from 441 commodity. This is only non-zero in 2009, 2010, and 2011
+        if table_type == :summary
+            supply_df_year |>
+                x -> transform!(x,
+                    [:commodities, :sectors, :value] => ByRow((c,s,v) -> (c=="441" && s=="SUB") ? 0 : v) => :value
+                )
+        end
+
+
         out = vcat(out, use_df_year, supply_df_year)
     end
 
