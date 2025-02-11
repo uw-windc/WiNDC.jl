@@ -27,6 +27,10 @@ include("national/structs.jl")
 
 export NationalTable
 
+include("national/download.jl")
+
+export fetch_supply_use
+
 include("national/detailed_data.jl")
 
 
