@@ -5,7 +5,7 @@ using Documenter, WiNDC, PATHSolver
 const _PAGES = [
     "Introduction" => ["index.md"],
     #"Data" => ["data/core.md"],
-    #"National Module" => ["national/overview.md"],
+    "National Module" => ["national/overview.md"],
     "API" => ["api.md"]
     
 ]
