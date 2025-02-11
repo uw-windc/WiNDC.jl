@@ -1,7 +1,8 @@
 """
     save_table(
         output_path::String
-        MU::T,
+        MU::T;
+        overwrite::Bool = false
     ) where T<:WiNDCtable
 
 Save a `WiNDCtable` to a file. The file format is HDF5, which can be opened
@@ -13,14 +14,30 @@ columns - Array - The column names of each yearly DataFrame
 
 ## Required Arguments
 
-- `output_path::String`: The path to save the file.
+- `output_path::String`: The path to save the file. Must end in .jld2.
 - `MU::WiNDCtable`: The `WiNDCtable` to save.
+
+## Optional Arguments
+
+- `overwrite::Bool`: If true, overwrite the file if it already exists. Default is false.
 
 """
 function save_table(
     output_path::String,
     MU::T;
+    overwrite::Bool = false
 ) where T <: WiNDCtable
+
+    _, extension = splitext(output_path)
+
+    @assert extension == ".jld2" "The output path must end in .jld2."
+    output_path = !isabspath(output_path) ? joinpath(pwd(), output_path) : output_path
+
+    if overwrite
+        file = jldopen(output_path, "w+")
+    else
+        file = jldopen(output_path, "a")
+    end
 
     all_years = get_table(MU) |>
         x -> x[!,:year] |>
@@ -28,15 +45,28 @@ function save_table(
 
     column_names = get_table(MU) |> names
 
-    out = Dict(
-        "type" => T,
-        "sets" => MU.sets,
-        "columns" => column_names,
-        [string(year) => get_table(MU) |> x-> subset(x, :year => ByRow(==(year))) for year in all_years]...
-    )
+    if haskey(file, "type")
+        @assert file["type"] == T "The type of the table does not match the type of the file."
+    else
+        file["type"] = T
+    end
 
-    output_path = !isabspath(output_path) ? joinpath(pwd(), output_path) : output_path
-    save(output_path, out)
+    if !haskey(file, "sets")
+        file["sets"] = MU.sets
+    end
+
+    if !haskey(file, "columns")
+        file["columns"] = column_names
+    end
+
+    for year in all_years
+        table = get_table(MU) |> x-> subset(x, :year => ByRow(==(year)))
+
+        if !haskey(file, string(year))
+            file[string(year)] = table
+        end
+    end
+
 end
 
 """
