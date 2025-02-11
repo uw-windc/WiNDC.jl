@@ -2,7 +2,22 @@ abstract type AbstractNationalTable <: WiNDCtable end
 
 domain(data::AbstractNationalTable) = [:commodities, :sectors, :year]
 
+"""
+    NationalTable
 
+Subtype of [`WiNDCtable`](@ref) that holds the national data.
+
+## Fields
+
+- `table::DataFrame`: The main table of the WiNDCtable.
+- `sets::DataFrame`: The sets of the WiNDCtable.
+
+## Domain
+
+- `:commodities`
+- `:sectors`
+- `:year`
+"""
 struct NationalTable <: AbstractNationalTable
     table::DataFrame
     sets::DataFrame

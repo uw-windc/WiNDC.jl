@@ -45,7 +45,23 @@ end
 
 
 
+"""
+    national_mpsge(data::NationalTable)
 
+Create a MPSGE model from the given NationalTable object.
+
+## Required Arguments
+
+1. `data` - A NationalTable object.
+
+## Output
+
+Returns a MPSGEModel object.
+
+To Do:
+
+Describe Model
+"""
 function national_mpsge(data::NationalTable)
     
     M = MPSGEModel()

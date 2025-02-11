@@ -1,5 +1,39 @@
+"""
+    WiNDCtable
+
+Abstract supertype for all WiNDCtables. 
+
+## Required Fields
+
+- `table::DataFrame`: The main table of the WiNDCtable.
+- `sets::DataFrame`: The sets of the WiNDCtable.
+
+## Required Functions
+
+- `domain(data::T) where T<:WiNDCtable`: [`domain`](@ref)
+
+
+To Do:
+
+Add general idea of how this works.
+"""
 abstract type WiNDCtable end;
 
+
+"""
+    domain(data::T) where T<:WiNDCtable
+
+Return the domain of the WiNDCtable object. Must be implemented for any subtype 
+of WiNDCtable. Will throw an error if not implemented.
+
+## Required Arguments
+
+1. `data` - A WiNDCtable-like object.
+
+## Output
+
+Returns a vector of symbols representing the domain of the WiNDCtable object.
+"""
 domain(data::WiNDCtable) = throw(ArgumentError("domain not implemented for WiNDCtable"))
 
 
