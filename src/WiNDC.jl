@@ -9,7 +9,7 @@ using ZipFile, Downloads
 
 include("structs.jl")
 
-export all_data, domain, WiNDCtable, get_set, get_table, get_subtable
+export domain, WiNDCtable, get_set, get_table, get_subtable
 
 include("io.jl")
 
@@ -29,7 +29,6 @@ export NationalTable
 
 include("national/detailed_data.jl")
 
-export national_tables
 
 include("national/load_data.jl")
 
@@ -46,10 +45,6 @@ export zero_profit, market_clearance, margin_balance
 include("national/model.jl")
 
 export national_mpsge
-
-include("national/download.jl")
-
-export fetch_supply_use
 
 ## State Data
 
