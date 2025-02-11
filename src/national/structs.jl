@@ -2,72 +2,93 @@ abstract type AbstractNationalTable <: WiNDCtable end
 
 domain(data::AbstractNationalTable) = [:commodities, :sectors, :year]
 
+"""
+    NationalTable
 
+Subtype of [`WiNDCtable`](@ref) that holds the national data.
+
+## Fields
+
+- `table::DataFrame`: The main table of the WiNDCtable.
+- `sets::DataFrame`: The sets of the WiNDCtable.
+
+## Domain
+
+- `:commodities`
+- `:sectors`
+- `:year`
+"""
 struct NationalTable <: AbstractNationalTable
     table::DataFrame
     sets::DataFrame
 end
+
+
+function reverse_subtable_flow(
+    data::DataFrame, 
+    subtables::Vector{String};
+    column = :value
+)
+    data |>
+        x -> transform(x, 
+            [:subtable,column] => ByRow((s,v) -> in(s, subtables) ? -v : v) => column
+        )
+end
+
+
 
 ######################
 ## Aggregate Tables ##
 ######################
 
 gross_output(data::AbstractNationalTable; column::Symbol = :value, output::Symbol = :value) =
-    vcat(
-        get_subtable(data, "intermediate_supply", column = column, output = output),
-        get_subtable(data, "household_supply", column = column, output = output),
-        get_subtable(data, "margin_supply", column = column, output = output, negative = true)
-    ) |>
-    x -> groupby(x, filter(y -> y!=:sectors, domain(data))) |>
-    x -> combine(x, output => (y -> sum(y;init=0)) => output)
+    get_subtable(data, ["intermediate_supply", "household_supply", "margin_supply"]) |>
+        x -> reverse_subtable_flow(x, ["margin_supply"], column = column) |>
+        x -> groupby(x, filter(y -> y!=:sectors, domain(data))) |>
+        x -> combine(x, column => (y -> sum(y;init=0)) => output)
 
 
 armington_supply(data::AbstractNationalTable; column = :value, output = :value) = 
-    vcat(
-        get_subtable(data, "intermediate_demand", column = column, output = output),
-        get_subtable(data, "exogenous_final_demand", column = column, output = output),
-        get_subtable(data, "personal_consumption", column = column, output = output),
-    ) |>
-    x -> groupby(x, filter(y -> y!=:sectors, domain(data))) |>
-    x -> combine(x, output => (y -> sum(y;init=0)) => output)
+    get_subtable(data, ["intermediate_demand", "exogenous_final_demand","personal_consumption"]) |>
+        x -> groupby(x, filter(y -> y!=:sectors, domain(data))) |>
+        x -> combine(x, column => (y -> sum(y;init=0)) => output) 
 
+
+
+output_tax(data::AbstractNationalTable; column = :value, output = :value) =
+    get_subtable(data, ["other_tax", "sector_subsidy"]) |>
+        x -> groupby(x, filter(y -> y!=:commodities, domain(data))) |>
+        x -> combine(x, column => (y -> sum(y;init=0)) => output)
+
+        
 
 other_tax_rate(data::AbstractNationalTable; column = :value, output = :value) = 
     outerjoin(
-        get_subtable(data, "intermediate_supply", column = column, output = :is) |>
+        get_subtable(data, ["intermediate_demand", "value_added"])  |>
             x -> groupby(x, filter(y -> y!=:commodities, domain(data))) |>
-            x -> combine(x, :is => sum => :is),
-        get_subtable(data, "other_tax", column = column, output = :ot) |>
-            x -> select(x, Not(:commodities)),
+            x -> combine(x, column => sum => :total_output),
+        WiNDC.output_tax(data, column = column, output = :tax),
         on = filter(y -> y!=:commodities, domain(data))
-    ) |>
-    x -> coalesce.(x,0) |>
-    x -> transform(x,
-        [:is, :ot] => ByRow((i,o) -> i == 0 ? 0 : o/i) => output
-    ) |>
-    x -> select(x, Not(:is,:ot))
-
-
-absorption_tax(data::AbstractNationalTable; column = :value, output = :value) = 
-    outerjoin(
-        get_subtable(data, "tax", column = column, output = :tax) |>
-            x -> select(x, Not(:sectors)),
-        get_subtable(data, "subsidies", column = column, output = :subsidies) |>
-            x -> select(x, Not(:sectors)),
-        on = filter(y -> y!=:sectors, domain(data))
     ) |>
     x -> coalesce.(x, 0) |>
     x -> transform(x,
-        [:tax, :subsidies] => ByRow((t,s) -> t-s) => output
+        [:total_output, :tax] => ByRow((o,t) -> o == 0 ? 0 : t/o) => output
     ) |>
-    x -> select(x, Not(:tax, :subsidies))
+    x -> select(x, Not(:total_output, :tax))
+
+
+absorption_tax(data::AbstractNationalTable; column = :value, output = :value) = 
+    get_subtable(data, ["tax", "subsidies"]) |> 
+        x -> reverse_subtable_flow(x, ["subsidies"], column = column) |>
+        x -> groupby(x, filter(y -> y!=:sectors, domain(data))) |>
+        x -> combine(x, column => (y -> sum(y;init=0)) => output) 
 
 absorption_tax_rate(data::AbstractNationalTable; column = :value, output = :value) =     
     outerjoin(
         absorption_tax(data; column = column, output = :total_tax),
         armington_supply(data; column = column, output = :arm_sup),
         on = filter(y -> y!=:sectors, domain(data))
-    )|>
+    ) |>
     x -> coalesce.(x, 0) |>
     x -> transform(x,
         [:arm_sup, :total_tax] => ByRow((v,t) -> v == 0 ? 0 : t/v) => output
