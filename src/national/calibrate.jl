@@ -48,7 +48,7 @@ are:
 
 The three tax rates are fixed. The tax rates are:
 
-1. [`output_tax_rate`](@ref)
+1. [`other_tax_rate`](@ref)
 2. [`absorption_tax_rate`](@ref)
 3. [`import_tariff_rate`](@ref)
 """
