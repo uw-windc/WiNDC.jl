@@ -21,7 +21,7 @@ sut_files = fetch_supply_use()
 detailed_data = build_national_table(sut_files)
 
 DD, _ = calibrate(detailed_data)
-save_table("detailed_data_partial.jld2", DD)
+save_table("detailed_data_partial.jld2", DD; lower_bound = .5, upper_bound = 1.5)
 ```
 
 ### Summary Data
@@ -30,7 +30,7 @@ save_table("detailed_data_partial.jld2", DD)
 summary_data = build_national_table(sut_files; aggregation = :summary)
 
 SD,M = calibrate(summary_data)
-save_table("summary_data.jld2", SD)
+save_table("summary_data.jld2", SD; lower_bound = .5, upper_bound = 1.5)
 ```
 
 ### Disaggregated Detailed Data
@@ -43,7 +43,7 @@ detailed_data = load_table("detailed_data_partial.jld2")
 
 detailed_yearly = WiNDC.national_disaggragate_summary_to_detailed(detailed_data, summary_data, summary_map)
 
-DD, _ = calibrate(detailed_yearly)
+DD, _ = calibrate(detailed_yearly; lower_bound = .01, upper_bound = 100)
 
 save_table("detailed_data.jld2", DD)
 ```

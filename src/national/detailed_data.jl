@@ -219,6 +219,7 @@ function detailed_summary_map(detailed_path::String)
                 (summary = "MDTY", detailed = "MDTY", description = "Import duties"),
                 (summary = "TOP", detailed = "TOP", description = "Tax on products"),
                 (summary = "SUB", detailed = "SUB", description = "Subsidies on products"),
+                (summary = "T00OSUB", detailed = "T00OSUB", description = "Subsidies on production"),
                 ])
         )
     return df

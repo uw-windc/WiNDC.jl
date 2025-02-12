@@ -19,6 +19,10 @@ include("dataframe_operations.jl")
 
 export subset
 
+include("calibration.jl")
+
+export calibrate
+
 include("api/download.jl")
 
 ## National Data
@@ -39,8 +43,6 @@ include("national/load_data.jl")
 export build_national_table
 
 include("national/calibrate.jl")
-
-export calibrate
 
 include("national/balance.jl")
 

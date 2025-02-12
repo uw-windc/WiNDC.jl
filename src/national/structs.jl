@@ -40,14 +40,60 @@ end
 ######################
 ## Aggregate Tables ##
 ######################
+"""
+    gross_output(data::AbstractNationalTable; column::Symbol = :value, output::Symbol = :value)
 
+Calculate the gross output of the sectors.
+
+## Required Arguments
+
+- `data::AbstractNationalTable`: The national data.
+
+## Keyword Arguments
+
+- `column::Symbol = :value`: The column to be used for the calculation.
+- `output::Symbol = :value`: The name of the output column.
+
+## Output
+
+Returns a DataFrame with the columns `:sectors` and `:value`.
+
+## Process
+
+```math
+\\sum_{s\\in\\text{Sectors}} \\text{Intermediate_Demand} + \\text{Household_Supply} - \\text{Margin_Supply}
+```
+"""
 gross_output(data::AbstractNationalTable; column::Symbol = :value, output::Symbol = :value) =
     get_subtable(data, ["intermediate_supply", "household_supply", "margin_supply"]) |>
         x -> reverse_subtable_flow(x, ["margin_supply"], column = column) |>
         x -> groupby(x, filter(y -> y!=:sectors, domain(data))) |>
         x -> combine(x, column => (y -> sum(y;init=0)) => output)
 
+"""
+    armington_supply(data::AbstractNationalTable; column::Symbol = :value, output::Symbol = :value)
 
+Calculate the armington supply of the sectors.
+
+## Required Arguments
+
+- `data::AbstractNationalTable`: The national data.
+
+## Keyword Arguments
+
+- `column::Symbol = :value`: The column to be used for the calculation.
+- `output::Symbol = :value`: The name of the output column.
+
+## Output
+
+Returns a DataFrame with the columns `:sectors` and `:value`.
+
+## Process
+
+```math
+\\sum_{s\\in\\text{Sectors}} \\text{Intermediate_Demand} + \\text{Exogenous_Final_Demand} + \\text{Personal_Consumption}
+```
+"""
 armington_supply(data::AbstractNationalTable; column = :value, output = :value) = 
     get_subtable(data, ["intermediate_demand", "exogenous_final_demand","personal_consumption"]) |>
         x -> groupby(x, filter(y -> y!=:sectors, domain(data))) |>
@@ -61,7 +107,24 @@ output_tax(data::AbstractNationalTable; column = :value, output = :value) =
         x -> combine(x, column => (y -> sum(y;init=0)) => output)
 
         
+"""
+    other_tax_rate(data::AbstractNationalTable; column = :value, output = :value)
 
+Calculate the other tax rate of the sectors.
+
+## Required Arguments
+
+- `data::AbstractNationalTable`: The national data.
+
+## Keyword Arguments
+
+- `column::Symbol = :value`: The column to be used for the calculation.
+- `output::Symbol = :value`: The name of the output column.
+
+## Output
+
+Returns a DataFrame with the columns `:sectors` and `:value`.
+"""
 other_tax_rate(data::AbstractNationalTable; column = :value, output = :value) = 
     outerjoin(
         get_subtable(data, ["intermediate_demand", "value_added"])  |>
@@ -83,6 +146,24 @@ absorption_tax(data::AbstractNationalTable; column = :value, output = :value) =
         x -> groupby(x, filter(y -> y!=:sectors, domain(data))) |>
         x -> combine(x, column => (y -> sum(y;init=0)) => output) 
 
+"""
+    absorption_tax_rate(data::AbstractNationalTable; column::Symbol = :value, output::Symbol = :value)
+
+Calculate the absorption tax rate of the sectors.
+
+## Required Arguments
+
+- `data::AbstractNationalTable`: The national data.
+
+## Keyword Arguments
+
+- `column::Symbol = :value`: The column to be used for the calculation.
+- `output::Symbol = :value`: The name of the output column.
+
+## Output
+
+Returns a DataFrame with the columns `:sectors` and `:value`.
+"""
 absorption_tax_rate(data::AbstractNationalTable; column = :value, output = :value) =     
     outerjoin(
         absorption_tax(data; column = column, output = :total_tax),
@@ -96,7 +177,24 @@ absorption_tax_rate(data::AbstractNationalTable; column = :value, output = :valu
     x -> select(x, Not(:total_tax, :arm_sup)) |>
     x -> subset(x, output => ByRow(!=(0)))
 
+"""
+    import_tariff_rate(data::AbstractNationalTable; column::Symbol = :value, output::Symbol = :value)
 
+Calculate the import tariff rate of the sectors.
+
+## Required Arguments
+
+- `data::AbstractNationalTable`: The national data.
+
+## Keyword Arguments
+
+- `column::Symbol = :value`: The column to be used for the calculation.
+- `output::Symbol = :value`: The name of the output column.
+
+## Output
+
+Returns a DataFrame with the columns `:sectors` and `:value`.
+"""
 import_tariff_rate(data::AbstractNationalTable; column = :value, output = :value) = 
     outerjoin(
         get_subtable(data, "duty", column = column, output = :duty) |>
