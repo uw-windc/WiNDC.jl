@@ -39,7 +39,7 @@ Returns a vector of the absolute paths to the extracted files.
 
 ## Process
 
-Downloads the [Miscellaneous Data](@ref) and places the files in the correct 
+Downloads the Miscellaneous Data and places the files in the correct 
 directories.
 """
 function fetch_extra_data(
