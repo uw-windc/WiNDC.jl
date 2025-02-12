@@ -1,7 +1,7 @@
 """
     fetch_zip_data(
         url::String,
-        filter_function::Function;;
+        filter_function::Function;
         output_path::String = joinpath(pwd(), "data"),
     )
 

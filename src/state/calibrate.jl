@@ -1,72 +1,19 @@
 
-"""
-    calibrate(data::AbstractNationalTable)
 
-This is currently geared toward calibrating the national dataset.
-I'll be working to make this be a general calibration function.
-
-Returns a new AbstractNationalTable with the calibrated values and the model.
-
-There are three primary balancing operations:
-
-1. Zero Profit - Column sums are equal
-2. Market Clearance - Row sums are equal
-3. Margin Balance - The margins balance
-
-The three tax rates are fixed. The tax rates are:
-
-1. Output Tax Rate
-2. Absorption Tax Rate
-3. Import Tariff Rate
-
-The following are fixed:
-
-1. Labor Compensation
-2. Imports
-3. Exports
-4. Household Supply
-
-Any zero values will remain zero. 
 
 """
-function calibrate(data::T; silent = false) where T<:AbstractRegionalTable
+    calibrate_fix_variables(M::Model, data::StateTable)
 
-    
-    M = Model(Ipopt.Optimizer)
+Four subtables are exogenous to the model and are fixed. These are:
 
-    if silent
-        set_silent(M)
-    end
+- `imports`
+- `exports`
+- `labor_demand`
+- `household_supply`
 
-    @variable(M, 
-        x[1:size(get_table(data),1)]
-    )
-
-
-    # Attach variables to dataframe
-    get_table(data) |>
-    x -> transform!(x,
-        :value => (y -> M[:x]) => :variable
-    )
-
-    lob = .01
-    upb = 100
-
-    # set bounds and start values
-    for row in eachrow(get_table(data))
-        set_start_value(row[:variable], row[:value])
-        lower_bound = row[:value]>0 ? row[:value]*lob : row[:value]*upb
-        upper_bound = row[:value]>0 ? row[:value]*upb : row[:value]*lob
-        set_lower_bound(row[:variable], lower_bound)
-        set_upper_bound(row[:variable], upper_bound)
-        if row[:value] == 0
-            fix(row[:variable], 0; force=true)
-        end
-    end
-
-
-    # Fix certain parameters -- exogenous portions of final demand,
-    # value added, imports, exports and household supply
+"""
+function calibrate_fix_variables(M::Model, data::StateTable)
+    #=
     vcat(
         get_subtable(data, "imports", [:value, :variable]),
         get_subtable(data, "exports", [:value, :variable]),
@@ -76,18 +23,44 @@ function calibrate(data::T; silent = false) where T<:AbstractRegionalTable
     x -> transform(x,
         [:value, :variable] => ByRow((val, var) -> fix(var, val; force=true))
     ) 
+    =#
+end
 
-    @objective(
-        M, 
-        Min, 
-        get_table(data) |> 
-            x -> transform(x,
-                [:value, :variable] => ByRow((val, var) -> 
-                    abs(val) * (var/val - 1)^2) => :objective
-            ) |>
-            x -> combine(x, :objective => sum => :objective) |>
-            x -> x[1,:objective]
-    )
+
+
+"""
+    calibrate_constraints(
+        M::Model, 
+        data::StateTable; 
+        lower_bound = .01, 
+        upper_bound = 10
+        )
+
+There are three primary balancing operations:
+    
+1. [`zero_profit`](@ref) - Column sums are equal
+2. [`market_clearance`](@ref) - Row sums are equal
+3. [`margin_balance`](@ref) - The margins balance
+
+Two table sums are bounded by `lower_bound` and `upper_bound` multipliers. These 
+are:
+
+1. [`gross_output`](@ref)
+2. [`armington_supply`](@ref)
+
+The three tax rates are fixed. The tax rates are:
+
+1. [`other_tax_rate`](@ref)
+2. [`absorption_tax_rate`](@ref)
+3. [`import_tariff_rate`](@ref)
+"""
+function calibrate_constraints(
+        M::Model, 
+        data::StateTable; 
+        lower_bound = .01, 
+        upper_bound = 10
+        )
+
 
     zero_profit(data; column = :variable) |> 
     x -> @constraint(M, 
@@ -106,52 +79,54 @@ function calibrate(data::T; silent = false) where T<:AbstractRegionalTable
         margin_balance[i=1:size(x,1)],
         x[i,:margin_balance] == 0
     )
-    
-    
+
+
+
     # Bound gross output
     outerjoin(
         gross_output(data; column = :variable, output = :expr),
         gross_output(data; column = :value),
-        on = filter(x -> x!=:sectors, domain(data))
+        on = [:commodities, :state, :year]
     ) |> 
     x -> transform(x,
-            :value => ByRow(v -> v>0 ? floor(lob*v)-5 : upb*v) => :lower, 
-            :value => ByRow(v -> v>0 ? upb*v : ceil(lob*v)+5) => :upper, 
+            :value => ByRow(v -> v>0 ? floor(lower_bound*v)-5 : upper_bound*v) => :lower, 
+            :value => ByRow(v -> v>0 ? upper_bound*v : ceil(lower_bound*v)+5) => :upper, 
     )|>
     x -> @constraint(M,
         gross_output[i=1:size(x,1)],
         x[i,:lower] <= x[i,:expr] <= x[i,:upper]
     )
-        
+  
     
     # Bound armington supply
     outerjoin(
         armington_supply(data; column = :variable, output = :expr),
         armington_supply(data; column = :value),
-        on = filter(x -> x!=:sectors, domain(data))
+        on = [:commodities, :state, :year]
     ) |>
     x -> @constraint(M,
         armington_supply[i=1:size(x,1)],
-        max(0,lob * x[i,:value]) <= x[i,:expr] <= abs(upb * x[i,:value])
+        max(0,lower_bound * x[i,:value]) <= x[i,:expr] <= abs(upper_bound * x[i,:value])
     )
-    
-    
+
+
+     #=
     # Fix tax rates
     outerjoin(
-        get_subtable(data, "intermediate_supply", column = :variable, output = :is) |>
+        get_subtable(data, ["intermediate_demand", "value_added"])  |>
             x -> groupby(x, filter(y -> y!=:commodities, domain(data))) |>
-            x -> combine(x, :is => sum => :is),
-        get_subtable(data, "other_tax", column = :variable, output = :ot) |>
-            x -> select(x, Not(:commodities)),
+            x -> combine(x, :variable => sum => :total_output),
+        output_tax(data, column = :variable, output = :ot),
         other_tax_rate(data, column = :value, output = :otr),
         on = filter(y -> y!=:commodities, domain(data))
     ) |>
     x -> dropmissing(x) |>
     x -> @constraint(M, 
         Output_Tax_Rate[i=1:size(x,1)],
-        x[i,:ot] == x[i,:is] * x[i,:otr]
+        x[i,:ot] == x[i,:total_output] * x[i,:otr]
     )
     
+
     outerjoin(
         absorption_tax(data, column = :variable, output = :at),
         armington_supply(data, column = :variable, output = :as),
@@ -177,21 +152,7 @@ function calibrate(data::T; silent = false) where T<:AbstractRegionalTable
         Import_Tariff_Rate[i=1:size(x,1)],
         x[i,:it] == x[i,:imports] * x[i,:itr]
     )
+
+    =#
     
-    optimize!(M)
-
-    @assert is_solved_and_feasible(M) "Error: The model was not solved to optimality."
-
-    df = get_table(data) |>
-        x -> transform(x,
-            :variable => ByRow(value) => :value
-        ) |>
-        x -> select(x, Not(:variable))
-
-
-    get_table(data) |>
-        x -> select!(x, Not(:variable))
-
-    return (T(df, data.sets), M)
-
 end

@@ -53,6 +53,9 @@ include("national/model.jl")
 export national_mpsge
 
 ## State Data
+include("state/download.jl")
+
+export fetch_GSP, fetch_extra_data
 
 include("state/structs.jl")
 

@@ -1,6 +1,30 @@
-function load_single_sagdp_data_file(data_path, file, name)
+"""
+    function identify_gsp_data(datapath::String = joinpath(pwd(),"data/state"))
+
+Identify the GSP data files in the `datapath` directory. The function returns a tuple
+containing the paths to the GSP data files.
+
+Very buggy!
+"""
+function identify_gsp_data(datapath::String = joinpath(pwd(),"data/state"))
+
+    X = readdir(datapath)
+
+    (
+        gdp = joinpath(datapath, filter(y -> occursin("SAGDP2N", y), X) |> first),
+        compenstation = joinpath(datapath, filter(y -> occursin("SAGDP4N", y), X) |> first),
+        subsidies = joinpath(datapath, filter(y -> occursin("SAGDP5N", y), X) |> first),
+        tax = joinpath(datapath, filter(y -> occursin("SAGDP6N", y), X) |> first),
+        surplus = joinpath(datapath, filter(y -> occursin("SAGDP7N", y), X) |> first),
+    )
+
+    
+end
+
+
+function load_single_sagdp_data_file(file, name)
     return CSV.read(
-        joinpath(data_path, file), 
+        file, 
         DataFrame, 
         footerskip = 4,
         types = Dict(:GeoFIPS => String),
@@ -27,10 +51,10 @@ function load_single_sagdp_data_file(data_path, file, name)
 end
 
 
-function load_raw_sagdp_data(data_path, files)
+function load_raw_sagdp_data(files)
     tables = []
-    for (file, name) in files
-        push!(tables, load_single_sagdp_data_file(data_path, file, name))
+    for (name, file) in pairs(files)
+        push!(tables, load_single_sagdp_data_file(file, name))
     end
 
     return vcat(tables...)
@@ -78,15 +102,14 @@ end
 
 
 function load_sagdp_data(
-    data_path::String,
-    files::Vector{Tuple{String,String}},
     summary_map;
     industry_codes = "industry_codes.csv",
     state_fips = "state_fips.csv",
-    aggregation = :detailed
+    aggregation = :detailed,
+    data_path = joinpath(pwd(), "data/state")
 )
 
-    raw_sagdp = load_raw_sagdp_data(data_path, files)
+    raw_sagdp = load_raw_sagdp_data(identify_gsp_data(data_path))
 
     state_fips = load_state_fips(data_path; file_name = state_fips)
     industry_codes = load_industry_codes(
@@ -164,23 +187,21 @@ industry codes. It returns a StateTable.
 """
 function disaggregate_national_to_state(
     data::NationalTable,
-    data_path::String,
-    files::Vector{Tuple{String,String}},
     summary_map;
     industry_codes = "industry_codes.csv",
     state_fips = "state_fips.csv",
-    aggregation = :detailed
+    aggregation = :detailed,
+    data_path = joinpath(pwd(), "data/state")
 )
 
     
 
     sagdp = load_sagdp_data(
-        data_path, 
-        files,
         summary_map;
         industry_codes = industry_codes,
         state_fips = state_fips,
-        aggregation = aggregation
+        aggregation = aggregation,
+        data_path = data_path
     )
 
     state_fips = load_state_fips(data_path; file_name = state_fips)
@@ -215,8 +236,7 @@ function disaggregate_national_to_state(
             ),
         sagdp |>
             x -> subset(x, 
-                :table => ByRow(x -> x == "gdp"),
-                :year => ByRow(x -> x<2023)
+                :table => ByRow(x -> x == :gdp)
             ),
         on = [:commodities => :naics, :year, :state],
         renamecols = "" => "_gdp"
@@ -229,7 +249,7 @@ function disaggregate_national_to_state(
         :state .=> identity .=> :state,
         [:value, :gdp] => ((v,g) -> g.*v./sum(g)) => :value
     ) |>
-    x -> subset(x, :value => ByRow(x -> x != 0))
+    x -> subset(x, :value => ByRow(x -> abs(x) > 1e-5))
 
     subsidies = leftjoin(
         state_level |>
@@ -238,7 +258,7 @@ function disaggregate_national_to_state(
             ),
         sagdp |>
             x -> subset(x, 
-                :table => ByRow(==("subsidies"))
+                :table => ByRow(==(:subsidies))
             ) |>
             x -> transform(x, :value => ByRow(x -> -x) => :sub) |>
             x -> select(x, Not(:value)),
@@ -261,7 +281,7 @@ function disaggregate_national_to_state(
             ),
         sagdp |>
             x -> subset(x, 
-                :table => ByRow(==("tax"))
+                :table => ByRow(==(:tax))
             ) |>
             x -> rename(x, :value => :tax),
         on = [:commodities => :naics, :year, :state],
@@ -283,7 +303,7 @@ function disaggregate_national_to_state(
             ),
         sagdp |>
             x -> subset(x, 
-                :table => ByRow(==("surplus"))
+                :table => ByRow(==(:surplus))
             ) |>
             x -> rename(x, :value => :surplus),
         on = [:sectors => :naics, :year, :state],
@@ -303,7 +323,7 @@ function disaggregate_national_to_state(
             ),
         sagdp |>
             x -> subset(x, 
-                :table => ByRow(==("compensation"))
+                :table => ByRow(==(:compensation))
             ) |>
             x -> rename(x, :value => :compensation),
         on = [:sectors => :naics, :year, :state],
@@ -324,7 +344,7 @@ function disaggregate_national_to_state(
             ),
         sagdp |>
             x -> subset(x, 
-                :table => ByRow(==("gdp"))
+                :table => ByRow(==(:gdp))
             ) |>
             x -> rename(x, :value => :tax),
         on = [:sectors => :naics, :year, :state],
