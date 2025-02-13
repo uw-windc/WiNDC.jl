@@ -15,12 +15,6 @@ of WiNDCtable. Will throw an error if not implemented.
 
 Returns a vector of symbols representing the domain of the WiNDCtable object.
 """
-"""
-    domain(data::T) where T<:WiNDCtable
-
-Return the domain of the table as a vector of symbols. Must be implemented for
-any subtype of a WiNDCtable.
-"""
 domain(data::WiNDCtable) = throw(ArgumentError("domain not implemented for WiNDCtable"))
 
 
