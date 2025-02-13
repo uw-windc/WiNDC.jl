@@ -2,6 +2,16 @@ abstract type AbstractRegionalTable <: WiNDCtable end
 
 WiNDC.domain(data::AbstractRegionalTable) = [:commodities, :sectors, :region, :year]
 
+"""
+    StateTable
+
+A table that contains data for state-level data.
+
+## Fields
+
+- `table::DataFrame` - The data table.
+- `sets::DataFrame` - The sets table.
+"""
 struct StateTable <: AbstractRegionalTable
     table::DataFrame
     sets::DataFrame

@@ -144,6 +144,24 @@ end
 # "margin_supply"          - gdp
 # "duty"                   - gdp
 # "other_tax"              - gdp
+
+"""
+    disaggregate_national_to_state(
+        data::NationalTable,
+        data_path::String,
+        files::Vector{Tuple{String,String}},
+        summary_map;
+        industry_codes = "industry_codes.csv",
+        state_fips = "state_fips.csv",
+        aggregation = :detailed
+    )
+
+This function disaggregates the national data to the state level. It takes in 
+the national data, the path to the state data, the files that contain the state 
+data, a summary map that maps the national data to the state data, and the 
+industry codes. It returns a StateTable.
+
+"""
 function disaggregate_national_to_state(
     data::NationalTable,
     data_path::String,
