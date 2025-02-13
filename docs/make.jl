@@ -1,19 +1,19 @@
-using Documenter, WiNDC
+using Documenter, WiNDC, PATHSolver
 
-DocMeta.setdocmeta!(WiNDC, :DocTestSetup, :(using WiNDC); recursive=true)
 
 
 const _PAGES = [
     "Introduction" => ["index.md"],
-    #"Data" => ["data/core.md"],
-    #"National Module" => ["national/overview.md"]
-    #"Core Module" => ["core/overview.md","core/national_model.md","core/national_set_list.md","core/state_model.md","core/set_listing.md"]
+    "Data" => ["data/core.md"],
+    "National Module" => ["national/overview.md"],
+    "API" => ["api.md"]
     
 ]
 
 
 makedocs(
     sitename="WiNDC.jl",
+    authors="WiNDC",
     format = Documenter.HTML(),
     modules = [WiNDC],
     pages = _PAGES
@@ -23,7 +23,8 @@ makedocs(
 
 deploydocs(
     repo = "https://github.com/uw-windc/WiNDC.jl",
+    target = "build",
     branch = "gh-pages",
+    versions = ["stable" => "v^", "v#.#", "dev" => "dev" ],
     push_preview = true
-    #versions = ["stable" => "v^", "v#.#" ],
 )

@@ -3,9 +3,13 @@ module WiNDC
 
 using DataFrames, CSV, XLSX, FileIO, JuMP, Ipopt, MPSGE, JLD2
 
+using ZipFile, Downloads
+
+## Generic Code
+
 include("structs.jl")
 
-export all_data, domain, WiNDCtable, get_set, get_table, get_subtable
+export domain, WiNDCtable, get_set, get_table, get_subtable
 
 include("io.jl")
 
@@ -15,17 +19,30 @@ include("dataframe_operations.jl")
 
 export subset, aggregate
 
+include("calibration.jl")
+
+export calibrate
+
+include("api/download.jl")
+
+## National Data
+
 include("national/structs.jl")
 
 export NationalTable
 
+include("national/download.jl")
+
+export fetch_supply_use
+
 include("national/detailed_data.jl")
 
-export national_tables
+
+include("national/load_data.jl")
+
+export build_national_table
 
 include("national/calibrate.jl")
-
-export calibrate
 
 include("national/balance.jl")
 
@@ -35,6 +52,7 @@ include("national/model.jl")
 
 export national_mpsge
 
+## State Data
 
 include("state/structs.jl")
 

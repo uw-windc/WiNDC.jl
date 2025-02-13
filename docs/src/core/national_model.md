@@ -1,6 +1,0 @@
-# National Disaggregation Model
-
-```@docs
-
-```
-

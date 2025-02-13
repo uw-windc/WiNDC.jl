@@ -42,6 +42,15 @@ subset both the main table and the set table.
 
 A table of type `T`.
 
+## Example
+If `data` is a detailed `NationalTable` and we want to only view the soybean 
+commodity:
+
+```julia
+
+subset(data, 
+    :commodities => (y -> y=="1111A0")
+    )
 """
 function DataFrames.subset(
         data::T, 

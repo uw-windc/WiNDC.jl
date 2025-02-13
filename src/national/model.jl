@@ -1,3 +1,67 @@
+
+function extract_subtable_df(
+    data::SubDataFrame, 
+    subtable::Vector{String};
+    output = subtable
+)
+    data |>
+        x -> subset(x, 
+            :subtable => ByRow(∈(subtable))
+        ) |>
+        x -> rename(x, :value => output)
+end
+
+
+function extract_subtable_df(
+    data::SubDataFrame, 
+    subtable::String;
+    output = subtable
+)
+    return extract_subtable_df(data, [subtable], output = output)
+end
+
+
+
+
+function extract_subtable_df(
+    data::DataFrame, 
+    subtable::Vector{String};
+    output = subtable
+)
+    data |>
+        x -> subset(x, 
+            :subtable => ByRow(in(subtable))
+        ) |>
+        x -> rename(x, :value => output)
+end
+
+function extract_subtable_df(
+    data::DataFrame, 
+    subtable::String;
+    output = subtable
+)
+    return extract_subtable_df(data, [subtable], output = output)
+end
+
+
+
+"""
+    national_mpsge(data::NationalTable)
+
+Create a MPSGE model from the given NationalTable object.
+
+## Required Arguments
+
+1. `data` - A NationalTable object.
+
+## Output
+
+Returns a MPSGEModel object.
+
+To Do:
+
+Describe Model
+"""
 function national_mpsge(data::NationalTable)
     
     M = MPSGEModel()
@@ -52,25 +116,16 @@ function national_mpsge(data::NationalTable)
     @consumer(M, RA, description = "Representative Agent")
 
 
-    outerjoin(
-        get_subtable(data, "intermediate_supply", output = :is),
-        get_subtable(data, "intermediate_demand", output = :id),
-        vcat(
-            get_subtable(data, "labor_demand", output = :va),
-            get_subtable(data, "capital_demand", output = :va)
-        ),
-        on = domain(data)
-    ) |>
-    x -> coalesce.(x, 0) |>
-    x -> groupby(x, [:sectors]) |>
-    x -> for (key, df) in pairs(x)
-            sector = key[:sectors]
-            @production(M, Y[sector], [t=0, s=0, va => s = 1], begin
-                [@output(PY[row[:commodities]], row[:is], t, taxes = [Tax(RA, Output_tax[sector])]) for row∈eachrow(df) if row[:is]!=0]...
-                [@input(PA[row[:commodities]], row[:id], s) for row∈eachrow(df) if row[:id]!=0]...
-                [@input(PVA[row[:commodities]], row[:va], va) for row∈eachrow(df) if row[:va]!=0]...
-            end)
-        end
+    get_subtable(data, ["intermediate_supply", "intermediate_demand", "labor_demand", "capital_demand"]) |>
+    x -> groupby(x, :sectors) |>
+    X -> for (key, df) in pairs(X)
+        sector = key[:sectors]
+        @production(M, Y[sector], [t=0, s=0, va => s = 1], begin
+            [@output(PY[row[:commodities]], row[:is], t, taxes = [Tax(RA, Output_tax[sector])]) for row∈eachrow(extract_subtable_df(df, "intermediate_supply", output = "is"))]...
+            [@input(PA[row[:commodities]], row[:id], s) for row∈eachrow(extract_subtable_df(df, "intermediate_demand", output = "id"))]...
+            [@input(PVA[row[:commodities]], row[:va], va) for row∈eachrow(extract_subtable_df(df, ["labor_demand", "capital_demand"], output = "va"))]...
+        end)
+    end
 
     get_subtable(data, "margin_supply", output = :ms) |>
         x -> groupby(x, :sectors) |>

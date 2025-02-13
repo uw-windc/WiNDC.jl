@@ -1,16 +1,20 @@
-"""
-    WiNDCtable
-
-Base abstract type for all structures. Subtypes should have field names
-
-- `table` - A DataFrame with columns [`domain`](@ref), `:subtable`, and `:value`.
-- `sets` - A DataFrame with columns `:set`, `:element`, and `:description`.
-
-And implement the function `domain(data::T) where T<:WiNDCtable` which should 
-    return a vector of symbols representing the domain of the table.
-"""
 abstract type WiNDCtable end;
 
+
+"""
+    domain(data::T) where T<:WiNDCtable
+
+Return the domain of the WiNDCtable object. Must be implemented for any subtype 
+of WiNDCtable. Will throw an error if not implemented.
+
+## Required Arguments
+
+1. `data` - A WiNDCtable-like object.
+
+## Output
+
+Returns a vector of symbols representing the domain of the WiNDCtable object.
+"""
 """
     domain(data::T) where T<:WiNDCtable
 
@@ -127,10 +131,11 @@ function get_subtable(
         subtable::String;
         column::Symbol = :value,
         output::Symbol = :value,
-        negative = false
+        negative = false,
+        keep_all_columns = false
     )
 
-    return get_subtable(data, subtable, [column]) |>
+    return get_subtable(data, subtable, [column]; keep_all_columns = keep_all_columns) |>
         x -> rename(x, column => output) |>
         x -> transform(x, output => ByRow(y -> negative ? -y : identity(y)) => output)
 end
