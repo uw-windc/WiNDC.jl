@@ -17,7 +17,7 @@ export save_table, load_table
 
 include("dataframe_operations.jl")
 
-export subset
+export subset, aggregate
 
 include("calibration.jl")
 
